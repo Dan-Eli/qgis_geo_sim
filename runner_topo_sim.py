@@ -20,8 +20,8 @@ app.initQgis()
 Processing.initialize()
 
 # Call the processing script
-msg = processing.run("script:topological_simplifier", {'INPUT':'D:/OneDrive/Personnel/Daniel/QGIS/Kingston/Kingston_dissolved.gpkg|layername=Hydro',
-                                                       'TOLERANCE':3,'TOPOLOGY':True,'OUTPUT':'D:/OneDrive/Personnel/Daniel/QGIS/Kingston/Kingston_dissolved1103.gpkg'})
+#msg = processing.run("script:topological_simplifier", {'INPUT':'D:/OneDrive/Personnel/Daniel/QGIS/Kingston/Kingston_dissolved.gpkg|layername=Hydro',
+#                                                       'TOLERANCE':3,'TOPOLOGY':True,'OUTPUT':'D:/OneDrive/Personnel/Daniel/QGIS/Kingston/Kingston_dissolved1103.gpkg'})
 # Print the name of the algorithm
 #QgsApplication.processingRegistry().addProvider(QgsNativeAlgorithms())
 #for algo in QgsApplication.processingRegistry().algorithms():

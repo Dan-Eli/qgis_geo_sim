@@ -20,7 +20,7 @@ app.initQgis()
 Processing.initialize()
 
 # Call the processing script
-msg = processing.run("script:sherbend", {'INPUT':r'C:\Users\berge\PycharmProjects\qgis_geo_sim\ttt.gpkg|layername=ttt',
+msg = processing.run("script:sherbend", {'INPUT':r'C:\Users\berge\PycharmProjects\qgis_geo_sim\test3.gpkg|layername=test3',
                                          'DIAMETER':5, 'EXCLUDE_HOLE':True, 'EXCLUDE_POLYGON':True,
                                          'OUTPUT':r'C:\Users\berge\PycharmProjects\qgis_geo_sim\road_skeleton_out99.gpkg'} )
 

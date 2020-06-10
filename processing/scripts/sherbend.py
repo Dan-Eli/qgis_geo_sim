@@ -17,21 +17,58 @@ from lib_geosim import Holder
 @alg.input(type=alg.DISTANCE, name="DIAMETER", label="Bend diameter", default=1.0)
 @alg.input(type=alg.BOOL, name="EXCLUDE_HOLE", label="Exclude holes", default=True)
 @alg.input(type=alg.BOOL, name="EXCLUDE_POLYGON", label="Exclude polygons", default=True)
-@alg.input(type=alg.SINK, name="OUTPUT", label="Output layer")
+@alg.input(type=alg.SINK, name="OUTPUT", label="Sherbend")
 @alg.output(type=str, name="NBR_FEATURE", label="Number of features")
 
 def sherbend(instance, parameters, context, feedback, inputs):
     """
-    Given a distance will split a line layer into segments of the distance1
-    * coco
-    * toto
+    Sherbend is a geospatial simplification and generalization tool for lines and polygons. \
+    Sherbend is an implementation and an improvement of the algorithm described in the paper \
+    "Line Generalization Based on Analysis of Shape Characteristics, Zeshen Wang and \
+    Jean-Claude Müller, 1998" often known as "Bend Simplify" or "Wang Algorithm". The \
+    particularity of this algorithm is that for each line it analyzes its bends (curves) and \
+    decides which one to simplify, trying to emulate what a cartographer would do manually \
+    to simplify or generalize a line. Sherbend will accept points, lines and polygons as input. \
+    Even though points cannot be simplified, they are used for topological relationship \
+    validations. Sherbend can accept GeoPackage and Esri Shape file as input/ouput but not a mixed \
+    of both.
 
-    <b>This text is bold</b>
+    <b>Usage</b>
 
-    #. Titre
-    #. Titre 2
+    <u>Input</u> : Any Line string or Polygon layer
+
+    <u>Bend diameter</u>: Theoritical diameter of a bend to remove
+
+    <u>Exclude hole</u>: If you want to exclude holes below the diameter of the bend
+
+    <u>Exclude polygon</u>: If you want to exclude polygon below the diameter of the bend
+
+    <u>Bend diameter</u>: Theoretical diameter of a bend to remove
+
+    <b>Line Simplification versus Line Generalization</b>
+    Line Simplification is the process of removing vertices in a line while trying to keep the maximum \
+    number of details within the line whereas Line Generalization is the process of removing \
+    meaningless (unwanted) details in a line usually for scaling down. The well known Douglas-Peucker \
+    algorithm is a very good example of line simplification tool and Sherbend falls more in the \
+    category of line generalization tools. Keep in mind thay both algorithms can be complementary because \
+    Sherbend will not remove unnecessary vertices in the case of very high densities of vertices. It may \
+    be a good idea to use Douglass Peucker before Sherbend in the case of very densed geometries.
+
+    <b>Rule of thumb for the diameter</b>
+    Sherbend can be used for line simplifying often in the context of line generalization. The big \
+    question will often be what diameter should we use? A good starting point is the cartographic rule of \
+    thumb -- the .5mm on the map -- which says that the minimumm distance between two lines should be \
+    greater than 0.5mm on a paper map. So to simplify (generalize) a line for representation at a scale of \
+    1:50 000 for example a diameter of 25m should be a good starting point...Rule of thumb for the diameter \
+    Sherbend can be used for line simplifying often in the context of line generalization. The big question will \
+    often be what diameter should we use? A good starting point is the cartographic rule of thumb -- the .5mm \
+    on the map -- which says that the minimumm distance between two lines should be greater than 0.5mm on a paper \
+    map. So to simplify (generalize) a line for representation at a scale of 1:50 000 for example a diameter of \
+    25m should be a good starting point...
+
+    for more information: https://github.com/Dan-Eli/GeoSim
+
     """
-
 
 #    context = dataobjects.createContext()
     context.setInvalidGeometryCheck(QgsFeatureRequest.GeometryNoCheck)

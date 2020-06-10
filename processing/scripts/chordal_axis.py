@@ -45,7 +45,6 @@ def chordal_axis(instance, parameters, context, feedback, inputs):
     """
 
     import os
-    print(os.getcwd())
 #    context = dataobjects.createContext()
     context.setInvalidGeometryCheck(QgsFeatureRequest.GeometryNoCheck)
 

@@ -8,15 +8,17 @@ from shapely.geometry import Point, LineString, Polygon
 from shapely.ops import linemerge
 from shapely.ops import unary_union
 from collections.abc import Iterable
-from collections import OrderedDict
 from shapely.strtree import STRtree
+
+from qgis.core import QgsFeature, QgsGeometry, QgsProcessingException,  QgsWkbTypes, QgsSpatialIndex, QgsGeometryUtils, \
+                      QgsPoint, QgsPointXY
 
 
 class LineStringSc(LineString):
     """LineString specialization that allow LincestringSc to be included  in the SpatialContainer"""
 
     def __init__(self, coords):
-        """ Constructor for the LineStringSc
+        """ Constructor for the LineStringSc \
             Parameters
             ----------
             coords : tuple
@@ -267,6 +269,24 @@ class GenUtil:
 
         return angle
 
+    @staticmethod
+    def coords_to_qgs_pnt(coords):
+        """Convert list of coordinates into QgsPoint
+        Parameters
+        ----------
+        coords: list tuple
+            (x,y): tuple of x,y coordinate
+        Returns
+        -------
+        list of QgsPoints
+        """
+
+        lst_qgs_point = []
+        for coord in coords:
+            lst_qgs_point.append(QgsPoint(coord[0], coord[1]))
+
+        return lst_qgs_point
+
 
     @staticmethod
     def distance(p1, p2):
@@ -483,8 +503,9 @@ class SpatialContainer(object):
         *Returns*: *None*
         """
 
-#        self._features = {}  # Container to hold the features
-        self._bbox_features = {}  # Container to hold the bounding boxes
+        self._features = {}  # Container to hold the QgsFeature
+
+        self._index = QgsSpatialIndex()
 
     def adjust_bbox(self, bounds, delta=GenUtil.ZERO):
         """Adjust the bounding box by increasing by a very small delta
@@ -509,40 +530,35 @@ class SpatialContainer(object):
         *Returns*: *None*
         """
 
-        tmp_features = []
+#        lst_qgs_feat = []
         for feature in features:
             # Check if the type is valid
-            if issubclass(feature.__class__, (PointSc, LineStringSc, PolygonSc)):
+            if issubclass(feature.__class__, (QgsFeature)):
                 pass
             else:
-                raise GeoSimException('Unsupported class: {}'.format(str(feature.__class__)))
+                raise QgsProcessingException("Feature must be of type or derived from Qgsfeature")
 
-            bounds = feature.bounds
+            # Extract the bounding box
+            qgs_rect = feature.geometry().boundingBox()
 
-            # Adjust the bounding box
-            bounds = self.adjust_bbox(bounds)
+#            feat = QgsFeature()
+#            feat.setGeometry(qgs_rect)
+#            lst_qgs_feat.append(qgs_rect)
 
             # Container unique internal counter
             SpatialContainer._sc_id += 1
 
-            # Add the spatial id to the feature
-            feature._sc_id = SpatialContainer._sc_id
-            feature._sc_scontainer = self
+ #           # Add the spatial id to the feature
+ #           feature.setId(SpatialContainer._sc_id)
+ #           feature._sc_scontainer = self
 
             # Add the feature in the feature container
-#            self._features[feature._sc_id] = feature
+ #           a = feature.id()
+            feature.setId(SpatialContainer._sc_id)
+            self._features[SpatialContainer._sc_id] = feature
 
-            # Add the bounding box in the bbox_container
-            self._bbox_features[feature._sc_id] = bounds
-
-            # Transform the feature as its corresponding bounding box... to simulate the Rtree class
-#            xmin, ymin, xmax, ymax = bounds
-#            tmp_feature = LineString(((xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin), (xmin, ymin)))
-#            tmp_feature._sc_id = feature._sc_id
-#            tmp_features.append(tmp_feature)
-
-        # Load all the features at the same time in the shapely rtree
-        self._r_tree = STRtree(features)
+            # Load all the features at the spatial index
+            self._index.addFeature(SpatialContainer._sc_id, qgs_rect)
 
         return
 
@@ -618,14 +634,14 @@ class SpatialContainer(object):
 
         return
 
-    def get_features(self, bounds=None, remove_features=[]):
+    def get_features(self, qgs_rectangle=None, remove_features=[]):
         """Extract the features from the spatial container.
         According to the parameters the extraction can manage the extraction based on a bounding box using
         the spatial index RTree, some filters to manage extraction based on properties and the possibility
         to remove specific features based on a list of keys
         *Parameters*:
-            - bounds: Bounding for the spatial extraction. *None* means all the features
-            - remove_keys: List of keys to be removed from the selection
+            - qgs_rect: QgsRectangle for the spatial extraction. *None* means all the features
+            - remove_keys: List of feature ID to be removed from the selection
         *Returns*:
             - List of features extracted from spatial container
         """
@@ -635,25 +651,33 @@ class SpatialContainer(object):
             if isinstance(feature, int):
                 tmp_remove_features.append(feature)
             else:
-                tmp_remove_features.append(feature._sc_id)
+                tmp_remove_features.append(feature.id())
 
         remove_features = tmp_remove_features
 
         # Extract the features by bounds if requested
-        if (bounds != None):
+        if (qgs_rectangle != None):
             # Extract features by bounds
-            xmin, ymin, xmax, ymax = self.adjust_bbox(bounds)
-            b_box_line = LineString(((xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin), (xmin, ymax)))
-            features = [feature for feature in self._r_tree.query(b_box_line) if feature._sc_id not in remove_features]
+            print ("adjust bbox")
+            # Adjust the bounding by a very small factor (to avoid extreme case...)
+            qgs_rectangle.setXMinimum(qgs_rectangle.xMinimum() - GenUtil.ZERO)
+            qgs_rectangle.setYMinimum(qgs_rectangle.yMinimum() - GenUtil.ZERO)
+            qgs_rectangle.setXMaximum(qgs_rectangle.xMaximum() + GenUtil.ZERO)
+            qgs_rectangle.setYMaximum(qgs_rectangle.yMaximum() + GenUtil.ZERO)
+#            xmin, ymin, xmax, ymax = self.adjust_bbox(bounds)
+ #           b_box_line = LineString(((xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin), (xmin, ymax)))
+            feature_ids = [id for id in self._index.intersects(qgs_rectangle)]
+            features = [self._features[id] for id in feature_ids if id not in remove_features]
         else:
-            features = [feature for feature in self._r_tree._geoms if feature._sc_id not in remove_features]
+            if len(remove_features) == 0:
+                # Get all features
+                features = [feature for feature in self._features.values() ]
+            else:
+                # Filter feature by Id
+                features = [feature for feature in self._features.values() if feature.id() not in remove_features]
 
         for feature in features:
-            if feature._sc_id >= 1:
-                yield feature
-            else:
-                # Feature with negative _sc_id are delete item
-                pass
+            yield feature
 
         return
 
@@ -680,12 +704,12 @@ class ChordalAxis(object):
     ANGLE_JUNCTION_T = 45.  # Delta used to test if 2 branches or contiguous
     SEARCH_TOLERANCE = None
 
-    def __init__(self, lst_triangle, search_tolerance=GenUtil.ZERO):
+    def __init__(self, multi_triangle, search_tolerance=GenUtil.ZERO):
         """Constructor
         Parameters
         ----------
-        lst_triangle : list
-            List of LineString triangle to process
+        multi_feature : list
+            Multi feature triangles
         search_tolerance : float, optional
             Value used for estimating zero
         Return
@@ -695,12 +719,18 @@ class ChordalAxis(object):
 
         ChordalAxis.SEARCH_TOLERANCE = search_tolerance
 
-        self._validate_triangles(lst_triangle)
+        self._validate_triangles(multi_triangle)
+        lst_triangle = []
 
         # Transform the Triangle LineString into _TriangleSc to be loaded in SpatialContainer
-        for i, triangle in enumerate(lst_triangle):
-            triangle = _TriangleSc(triangle.coords)
-            lst_triangle[i] = triangle
+#        geom_triangle = QgsGeometry.fromMultiPolygonXY([[[QgsPointXY(2, 0), QgsPointXY(2, 1), QgsPointXY(1, 0)]],
+#                                                          [[QgsPointXY(2, 0), QgsPointXY(2, 1), QgsPointXY(3, 0)]]])
+#        multi_triangle.setGeometry(geom_triangle)
+        for i, geom_triangle in enumerate(multi_triangle.geometry().constParts()):
+            triangle = QgsFeature()
+            triangle.setGeometry(geom_triangle)
+            triangle = GsTriangle(triangle)
+            lst_triangle.append(triangle)
 
         # Create spatial container
         self.s_container = SpatialContainer()
@@ -709,12 +739,12 @@ class ChordalAxis(object):
         self.s_container.add_features(lst_triangle)
 
         # Load some class variables
-        _TriangleSc.s_container = self.s_container
+        GsTriangle.s_container = self.s_container
 
         # Build the cluster (group of triangles part of a polygon)
 
-        cluster = {triangle.id: triangle for triangle in lst_triangle}
-        self.triangle_clusters = [cluster]
+#        cluster = {triangle.id: triangle for triangle in lst_triangle}
+        self.triangle_clusters = [lst_triangle]
 
 #        self.triangle_clusters = self._build_clusters()
 
@@ -729,16 +759,30 @@ class ChordalAxis(object):
 
         return
 
-    def _validate_triangles(self, lst_triangle):
+    def _validate_triangles(self, multi_triangle):
         """ Validate the each triangle
         Parameters
         ----------
-        lst_triangle : lst
-            List of LineString or Polygon triangles
+        multi_triangle : multi_polygon
+            Multipolygon of QgsTriangle or QgsPolygon
         Return
         ------
         None
         """
+
+        geom_triangle = multi_triangle.geometry()
+        for triangle in geom_triangle.constParts():
+            a = triangle.wkbType
+            if triangle.wkbType() not in (QgsWkbTypes.Triangle,
+                                        QgsWkbTypes.TriangleZ,
+                                        QgsWkbTypes.TriangleZM,
+                                        QgsWkbTypes.Polygon,
+                                        QgsWkbTypes.PolygonZ):
+                raise QgsProcessingException("Cannot process type: {0}".format(str(triangle.wkbType)))
+
+        print ('Validate that polygon has exactly 3 vertices')
+
+        return
 
         if len(lst_triangle) >= 1:
             triangle_type = lst_triangle[0].geom_type
@@ -888,14 +932,23 @@ class ChordalAxis(object):
         for triangle_cluster in self.triangle_clusters:
             centre_lines = []
             # Process each triangle of one cluster
-            for triangle in triangle_cluster.values():
+            for triangle in triangle_cluster:
                 centre_lines += triangle.centre_line
 
-            merge_centre_line = linemerge(centre_lines)
-            merged_centre_line = GenUtil.make_iterable(merge_centre_line)
-            merged_centre_lines += merged_centre_line
+            qgs_line_strings = []
+            for line in centre_lines:
+                qgs_line_strings.append(line.asPolyline())
+            multi_line_string = QgsGeometry.fromMultiPolylineXY(qgs_line_strings)
+            multi_line_merged = multi_line_string.mergeLines()
 
-        return merged_centre_lines
+            # Transform the multi line merged into a list of QGS Feature
+            qgs_features = []
+            for part in multi_line_merged.constParts():
+                qgs_feature = QgsFeature()
+                qgs_feature.setGeometry(part)
+                qgs_features.append(qgs_feature)
+
+        return qgs_features
 
     def correct_skeleton(self):
         """ Apply correction to the skeleton in order to remove unwanted artifact.
@@ -1199,19 +1252,37 @@ class ChordalAxis(object):
 
         return len(del_branches)
 
+#class GsQgsFeature(QgsFeature):
+#    """Define a GeoSim specialization of QgsFeature
+#
+#    This class copy the geometry into the new QgsFeature and strips the geometry of the feature passes in parameter
+#    and copy that feature stripped from the geometry in attribute for future use.
+#    """
+#
+#    def __init__(self, feature=None):
+#        super().__init__()
+#        if feature is not None:
+#            geom = feature.geometry()
+#            self.setGeometry(geom)
+#            feature.clearGeometry()
+#
+#        self._ori_qgs_feature = feature
+#
+#        return
 
-class _TriangleSc(LineStringSc):
+
+class GsTriangle(QgsFeature):
     """LineString specialization to be included in the SpatialContainer"""
 
-    id = 0
-
-    def __init__(self, coords):
-        super().__init__(coords)
-
-        # Add unique id to each Triangle
-        self.id = _TriangleSc.id
-
-        _TriangleSc.id += 1
+    def __init__(self, qgs_feature):
+        super().__init__()
+        geom = qgs_feature.geometry()
+        lst_pnt = geom.asPolygon()
+        self.p0 = lst_pnt[0][0]
+        self.p1 = lst_pnt[0][1]
+        self.p2 = lst_pnt[0][2]
+        self.coords = [(self.p0.x(), self.p0.y()), (self.p1.x(), self.p1.y()), (self.p2.x(), self.p2.y())]
+        self.setGeometry(geom)
 
     @property
     def mid_pnt_sides(self):
@@ -1234,13 +1305,22 @@ class _TriangleSc(LineStringSc):
         except AttributeError:
             if not hasattr(self, 'junction_x_mid_pnt_sides'):
                 # Calculate the mid point of each side of the triangle
-                coords = list(self.coords)
-                mid_pnt_side_0 = LineString([coords[0], coords[1]]).interpolate(0.5, normalized=True)
-                mid_pnt_side_1 = LineString((coords[1], coords[2])).interpolate(0.5, normalized=True)
-                mid_pnt_side_2 = LineString((coords[2], coords[0])).interpolate(0.5, normalized=True)
+                mid_pnt_side_0 = QgsGeometryUtils.midpoint(QgsPoint(self.p0), QgsPoint(self.p1))
+                mid_pnt_side_1 = QgsGeometryUtils.midpoint(QgsPoint(self.p1), QgsPoint(self.p2))
+                mid_pnt_side_2 = QgsGeometryUtils.midpoint(QgsPoint(self.p2), QgsPoint(self.p0))
+
+#                line1 = QgsGeometry.fromPolylineXY((self.p1, self.p2))
+#                mid_pnt_side_1 = line1.interpolate(line1.length() / 2.)
+
+#                line2 = QgsGeometry.fromPolylineXY((self.p2, self.p0))
+#                mid_pnt_side_2 = line2.interpolate(line2.length() / 2.)
+
+#                mid_pnt_side_0 = LineString([coords[0], coords[1]]).interpolate(0.5, normalized=True)
+#                mid_pnt_side_1 = LineString((coords[1], coords[2])).interpolate(0.5, normalized=True)
+#                mid_pnt_side_2 = LineString((coords[2], coords[0])).interpolate(0.5, normalized=True)
                 self._mid_pnt_sides = [mid_pnt_side_0, mid_pnt_side_1, mid_pnt_side_2]
             else:
-                # The figure is not anymore a triangle
+                # The feature is not anymore a triangle use pre-calculate value
                 self._mid_pnt_sides = self.junction_x_mid_pnt_sides
             return self._mid_pnt_sides
 
@@ -1349,10 +1429,13 @@ class _TriangleSc(LineStringSc):
             for mid_pnt_side in self.mid_pnt_sides:
 
                 # Find all potential adjacent triangles
-                potential_triangles = _TriangleSc.s_container.get_features(bounds=mid_pnt_side.bounds, remove_features=[self])
-
+                potential_triangles = GsTriangle.s_container.get_features(qgs_rectangle=mid_pnt_side.boundingBox(), remove_features=[self])
+                potential_triangles = list(potential_triangles)
+                ne plus ramener de générateur
+                0/0
                 # Find the closest triangle
-                triangles = [(triangle, mid_pnt_side.distance(triangle)) for triangle in potential_triangles]
+                geom_mid_pnt_side = QgsGeometry(mid_pnt_side)
+                triangles = [(triangle, geom_mid_pnt_side.distance(triangle.geometry())) for triangle in potential_triangles]
                 sorted(triangles, key=lambda triangle: triangle[1])  # Sort by distance
                 triangles = [triangle for (triangle, distance) in triangles if distance < ChordalAxis.SEARCH_TOLERANCE]
                 if len(triangles) == 0:
@@ -1385,7 +1468,8 @@ class _TriangleSc(LineStringSc):
         except AttributeError:
 
             centre_line = []
-            coords = list(self.coords)
+            coords = self.coords
+            qgs_points = GenUtil.coords_to_qgs_pnt(coords)
 
             # Process each case depending on the number of internal side of the triangle
             if self.type == ChordalAxis.ISOLATED:
@@ -1395,13 +1479,13 @@ class _TriangleSc(LineStringSc):
             elif self._type == ChordalAxis.TERMINAL:
                 # Terminal triangle add line from the extremity of the triangle up to mid opposite side
                 if self.adjacent_sides_ref[0] != None:
-                    coords_line = [coords[2], self.mid_pnt_sides[0]]
+                    coords_line = [qgs_points[2], self.mid_pnt_sides[0]]
                 if self.adjacent_sides_ref[1] != None:
-                    coords_line = [coords[0], self.mid_pnt_sides[1]]
+                    coords_line = [qgs_points[0], self.mid_pnt_sides[1]]
                 if self.adjacent_sides_ref[2] != None:
-                    coords_line = [coords[1], self.mid_pnt_sides[2]]
+                    coords_line = [qgs_points[1], self.mid_pnt_sides[2]]
 
-                centre_line.append(LineString(coords_line))
+                centre_line.append(QgsGeometry.fromPolyline(coords_line))
 
             elif self.type == ChordalAxis.SLEEVE:
                 # Sleeve triangle skeleton added between the mid point of side adjacent to another triangle

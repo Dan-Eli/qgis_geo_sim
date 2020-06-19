@@ -1,8 +1,6 @@
 import os, sys
 file = os.path.abspath(__file__)
 pathname = os.path.dirname(os.path.abspath(__file__))
-print ("File: ", file)
-print ("Path: ", pathname)
 sys.path.append(pathname)
 
 from qgis.processing import alg
@@ -44,10 +42,10 @@ def chordal_axis(instance, parameters, context, feedback, inputs):
     For more information: https://github.com/Dan-Eli/GeoSim
     """
 
-    import os
-#    context = dataobjects.createContext()
+    # In case an invalid geometry is in the file
     context.setInvalidGeometryCheck(QgsFeatureRequest.GeometryNoCheck)
 
+    # read the parameters
     source = instance.parameterAsSource(parameters, "INPUT", context )
     correction = instance.parameterAsBool(parameters, "CORRECTION", context)
 #    verbose = instance.parameterAsBool(parameters, "VERBOSE", context)
@@ -58,11 +56,8 @@ def chordal_axis(instance, parameters, context, feedback, inputs):
     (sink, dest_id) = instance.parameterAsSink(parameters, "OUTPUT", context,
                                                QgsFields(),
                                                QgsWkbTypes.LineString,
-                                               source.sourceCrs()
-                                          )
+                                               source.sourceCrs() )
 
-    # Validate input source type
-    a = source.wkbType()
     if source.wkbType() not in [QgsWkbTypes.MultiPolygon, QgsWkbTypes.MultiPolygonZ]:
         raise QgsProcessingException("Can only process: MultiPolygon and MultiPolygonZ type layer")
 
@@ -70,30 +65,29 @@ def chordal_axis(instance, parameters, context, feedback, inputs):
     if sink is None:
         raise QgsProcessingException(instance.invalidSinkError(parameters, "OUTPUT"))
 
-    nbr_feature = 0
     nbr_polygon = source.featureCount()
     nbr_triangle = 0
     nbr_centre_line = 0
     total = 100.0 / source.featureCount() if source.featureCount() else 0
 
     features = source.getFeatures()
-    for i, feature in enumerate(features):
-        qgis_geom = feature.geometry()
-        lst_triangle = []
-
-        for part in qgis_geom.constParts():
-            # Transform each part into polygon
-            part = to_polygon(part)
-            shapely_part = qgis_to_shapely(part)
-            if len(shapely_part.exterior.coords) != 4:
-                raise QgsProcessingException("A triangle polygon must have exactly four vertice")
-            line = LineString(shapely_part.exterior.coords)
-            lst_triangle.append(line)
-            nbr_triangle += 1
+    for i, multi_feature in enumerate(features):
+#        qgis_geom = feature.geometry()
+#        lst_triangle = []
+#
+#        for part in qgis_geom.constParts():
+#            # Transform each part into polygon
+#            part = to_polygon(part)
+#            shapely_part = qgis_to_shapely(part)
+#            if len(shapely_part.exterior.coords) != 4:
+#                raise QgsProcessingException("A triangle polygon must have exactly four vertice")
+#            line = LineString(shapely_part.exterior.coords)
+#            lst_triangle.append(line)
+#            nbr_triangle += 1
 
         # Call the chordal axis
         try:
-            ca = ChordalAxis(lst_triangle, GenUtil.ZERO)
+            ca = ChordalAxis(multi_feature, GenUtil.ZERO)
             if correction:
                 ca.correct_skeleton()
             centre_lines = ca.get_skeleton()

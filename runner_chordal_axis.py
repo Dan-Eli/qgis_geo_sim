@@ -26,8 +26,8 @@ Processing.initialize()
 
 # Call the processing script
 try:
-    msg = processing.run("script:chordal_axis", { 'INPUT':r'C:\Users\berge\PycharmProjects\qgis_geo_sim\test5.gpkg|layername=test5',
-                                                  'CORRECTION':True,
+    msg = processing.run("script:chordal_axis", { 'INPUT':r'C:\Users\berge\PycharmProjects\qgis_geo_sim\small_test.gpkg|layername=small_test',
+                                                  'CORRECTION':False,
                                                   'OUTPUT':r'C:\Users\berge\PycharmProjects\qgis_geo_sim\road_skeleton_out12321.gpkg'} )
 except Exception:
     import traceback

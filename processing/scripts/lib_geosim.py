@@ -11,7 +11,7 @@ from collections.abc import Iterable
 from shapely.strtree import STRtree
 
 from qgis.core import QgsFeature, QgsGeometry, QgsProcessingException,  QgsWkbTypes, QgsSpatialIndex, QgsGeometryUtils, \
-                      QgsPoint, QgsPointXY
+                      QgsPoint
 
 
 class LineStringSc(LineString):
@@ -664,8 +664,7 @@ class SpatialContainer(object):
             qgs_rectangle.setYMinimum(qgs_rectangle.yMinimum() - GenUtil.ZERO)
             qgs_rectangle.setXMaximum(qgs_rectangle.xMaximum() + GenUtil.ZERO)
             qgs_rectangle.setYMaximum(qgs_rectangle.yMaximum() + GenUtil.ZERO)
-#            xmin, ymin, xmax, ymax = self.adjust_bbox(bounds)
- #           b_box_line = LineString(((xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin), (xmin, ymax)))
+
             feature_ids = [id for id in self._index.intersects(qgs_rectangle)]
             features = [self._features[id] for id in feature_ids if id not in remove_features]
         else:
@@ -676,10 +675,7 @@ class SpatialContainer(object):
                 # Filter feature by Id
                 features = [feature for feature in self._features.values() if feature.id() not in remove_features]
 
-        for feature in features:
-            yield feature
-
-        return
+        return features
 
 
 class ChordalAxis(object):
@@ -1430,9 +1426,6 @@ class GsTriangle(QgsFeature):
 
                 # Find all potential adjacent triangles
                 potential_triangles = GsTriangle.s_container.get_features(qgs_rectangle=mid_pnt_side.boundingBox(), remove_features=[self])
-                potential_triangles = list(potential_triangles)
-                ne plus ramener de générateur
-                0/0
                 # Find the closest triangle
                 geom_mid_pnt_side = QgsGeometry(mid_pnt_side)
                 triangles = [(triangle, geom_mid_pnt_side.distance(triangle.geometry())) for triangle in potential_triangles]
@@ -1481,6 +1474,12 @@ class GsTriangle(QgsFeature):
                 if self.adjacent_sides_ref[0] != None:
                     coords_line = [qgs_points[2], self.mid_pnt_sides[0]]
                 if self.adjacent_sides_ref[1] != None:
+                    try:
+                        print (self.mid_pnt_sides)
+                    except Exception:
+                        import traceback
+                        traceback.print_exc()
+                    print (self.mid_pnt_sides[1])
                     coords_line = [qgs_points[0], self.mid_pnt_sides[1]]
                 if self.adjacent_sides_ref[2] != None:
                     coords_line = [qgs_points[1], self.mid_pnt_sides[2]]
@@ -1490,10 +1489,10 @@ class GsTriangle(QgsFeature):
             elif self.type == ChordalAxis.SLEEVE:
                 # Sleeve triangle skeleton added between the mid point of side adjacent to another triangle
                 mid_pnt = []
-                for i, adjacent_side_ref in enumerate(self._adjacent_sides_ref):
+                for i, adjacent_side_ref in enumerate(self.adjacent_sides_ref):
                     if adjacent_side_ref != None:
                         mid_pnt.append(self.mid_pnt_sides[i])
-                centre_line.append(LineString([mid_pnt[0], mid_pnt[1]]))
+                centre_line.append(QgsGeometry.fromPolyline([mid_pnt[0], mid_pnt[1]]))
 
             elif self.type == ChordalAxis.SLEEVE_X:
                 # No center line to create

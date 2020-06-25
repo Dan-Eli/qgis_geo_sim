@@ -1,11 +1,16 @@
 # Code example available here: https://anitagraser.com/2019/03/03/stand-alone-pyqgis-scripts-with-osgeo4w/
 
-import processing
+# The import here is not essential but it allows to detect syntax errors
+# When not importing these libraries it can be harder to detect error when calling the processing script
+import lib_geosim, chordal_axis
 
+import processing
 from qgis.analysis import QgsNativeAlgorithms
 from qgis.core import QgsApplication, QgsFeatureRequest
 from processing.core.Processing import Processing
 from processing.tools import dataobjects
+
+
 
 
 # Supply path to qgis install location

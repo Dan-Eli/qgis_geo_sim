@@ -12,6 +12,16 @@ import random
 from shapely.strtree import STRtree
 import random, time
 
+def use_same_qgspoint():
+    """Use the same QgsPoint 2 times"""
+
+    p0 = QgsPointXY(0,0)
+    p1 = QgsPointXY(1,1)
+
+    geom0 = QgsGeometry.fromPolylineXY([p0,p1])
+    geom1 = QgsGeometry.fromPolylineXY([p0,p1])
+
+    return (geom0,geom1)
 
 def merge_lines():
     """Merge line from a multi line string"""
@@ -288,8 +298,10 @@ app.initQgis()
 
 #-------------------------------------
 
-#Merge the lines
+#Use same points
+use_same_qgspoint()
 
+#Merge the lines
 merge_lines()
 
 #Find mid point in a line

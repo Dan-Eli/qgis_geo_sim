@@ -3,13 +3,11 @@
   <component name="ChangeListManager">
     <list default="true" id="319571a1-2cab-4697-99a9-761106cc0c94" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/processing/scripts/chordal_axis.py" beforeDir="false" afterPath="$PROJECT_DIR$/processing/scripts/chordal_axis.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/processing/scripts/lib_geosim.py" beforeDir="false" afterPath="$PROJECT_DIR$/processing/scripts/lib_geosim.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/road_skeleton_out12321.gpkg" beforeDir="false" afterPath="$PROJECT_DIR$/road_skeleton_out12321.gpkg" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/runner_chordal_axis.py" beforeDir="false" afterPath="$PROJECT_DIR$/runner_chordal_axis.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/small_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/small_test.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test3.gpkg" beforeDir="false" afterPath="$PROJECT_DIR$/test3.gpkg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test3.gpkg-shm" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test3.gpkg-wal" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbology-style.db" beforeDir="false" afterPath="$PROJECT_DIR$/symbology-style.db" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -33,7 +31,7 @@
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../../../OSGeo4W64/apps/qgis/python/plugins" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/processing/scripts" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="PyConsoleOptionsProvider">
@@ -114,27 +112,6 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="runner_sherbend" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <module name="qgis_geo_sim" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/runner_sherbend.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
     <configuration name="runner_topo_sim" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="qgis_geo_sim" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -177,13 +154,34 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="toto" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="qgis_geo_sim" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/processing" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="C:\Users\berge\PycharmProjects\qgis_geo_sim\coco\toto.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
         <item itemvalue="Python.runner_chordal_axis" />
         <item itemvalue="Python.small_test" />
+        <item itemvalue="Python.toto" />
         <item itemvalue="Python.lib_geosim" />
         <item itemvalue="Python.runner_topo_sim" />
-        <item itemvalue="Python.runner_sherbend" />
       </list>
     </recent_temporary>
   </component>
@@ -212,50 +210,50 @@
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="704" y="329" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1592102220654" />
-    <state width="1427" height="466" key="DebuggerActiveHint" timestamp="1592366008052">
+    <state width="1427" height="466" key="DebuggerActiveHint" timestamp="1593113745079">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1427" height="466" key="DebuggerActiveHint/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1592366008052" />
-    <state x="737" y="276" key="FileChooserDialogImpl" timestamp="1591563609502">
+    <state width="1427" height="466" key="DebuggerActiveHint/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1593113745079" />
+    <state x="737" y="276" key="FileChooserDialogImpl" timestamp="1592948783092">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="737" y="276" key="FileChooserDialogImpl/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1591563609502" />
-    <state width="1899" height="218" key="GridCell.Tab.0.bottom" timestamp="1592366251966">
+    <state x="737" y="276" key="FileChooserDialogImpl/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1592948783092" />
+    <state width="1899" height="218" key="GridCell.Tab.0.bottom" timestamp="1593118815953">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1899" height="218" key="GridCell.Tab.0.bottom/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1592366251966" />
-    <state width="1899" height="218" key="GridCell.Tab.0.center" timestamp="1592366251965">
+    <state width="1899" height="218" key="GridCell.Tab.0.bottom/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1593118815953" />
+    <state width="1899" height="218" key="GridCell.Tab.0.center" timestamp="1593118815952">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1899" height="218" key="GridCell.Tab.0.center/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1592366251965" />
-    <state width="1899" height="218" key="GridCell.Tab.0.left" timestamp="1592366251965">
+    <state width="1899" height="218" key="GridCell.Tab.0.center/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1593118815952" />
+    <state width="1899" height="218" key="GridCell.Tab.0.left" timestamp="1593118815952">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1899" height="218" key="GridCell.Tab.0.left/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1592366251965" />
-    <state width="1899" height="218" key="GridCell.Tab.0.right" timestamp="1592366251966">
+    <state width="1899" height="218" key="GridCell.Tab.0.left/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1593118815952" />
+    <state width="1899" height="218" key="GridCell.Tab.0.right" timestamp="1593118815953">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1899" height="218" key="GridCell.Tab.0.right/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1592366251966" />
-    <state width="1899" height="218" key="GridCell.Tab.1.bottom" timestamp="1592366251966">
+    <state width="1899" height="218" key="GridCell.Tab.0.right/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1593118815953" />
+    <state width="1899" height="218" key="GridCell.Tab.1.bottom" timestamp="1593118819207">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1899" height="218" key="GridCell.Tab.1.bottom/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1592366251966" />
-    <state width="1899" height="218" key="GridCell.Tab.1.center" timestamp="1592366251966">
+    <state width="1899" height="218" key="GridCell.Tab.1.bottom/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1593118819207" />
+    <state width="1899" height="218" key="GridCell.Tab.1.center" timestamp="1593118819206">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1899" height="218" key="GridCell.Tab.1.center/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1592366251966" />
-    <state width="1899" height="218" key="GridCell.Tab.1.left" timestamp="1592366251966">
+    <state width="1899" height="218" key="GridCell.Tab.1.center/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1593118819206" />
+    <state width="1899" height="218" key="GridCell.Tab.1.left" timestamp="1593118819206">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1899" height="218" key="GridCell.Tab.1.left/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1592366251966" />
-    <state width="1899" height="218" key="GridCell.Tab.1.right" timestamp="1592366251966">
+    <state width="1899" height="218" key="GridCell.Tab.1.left/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1593118819206" />
+    <state width="1899" height="218" key="GridCell.Tab.1.right" timestamp="1593118819207">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1899" height="218" key="GridCell.Tab.1.right/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1592366251966" />
-    <state x="461" y="165" key="SettingsEditor" timestamp="1591563616223">
+    <state width="1899" height="218" key="GridCell.Tab.1.right/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1593118819207" />
+    <state x="461" y="165" key="SettingsEditor" timestamp="1592948795833">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="461" y="165" key="SettingsEditor/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1591563616223" />
+    <state x="461" y="165" key="SettingsEditor/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1592948795833" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -267,7 +265,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/runner_chordal_axis.py</url>
-          <line>42</line>
+          <line>47</line>
           <option name="timeStamp" value="45" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -292,47 +290,47 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/small_test.py</url>
-          <line>385</line>
+          <line>397</line>
           <option name="timeStamp" value="70" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/small_test.py</url>
-          <line>343</line>
+          <line>355</line>
           <option name="timeStamp" value="71" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/small_test.py</url>
-          <line>394</line>
+          <line>406</line>
           <option name="timeStamp" value="72" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/small_test.py</url>
-          <line>339</line>
+          <line>351</line>
           <option name="timeStamp" value="73" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/small_test.py</url>
-          <line>380</line>
+          <line>392</line>
           <option name="timeStamp" value="74" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/small_test.py</url>
-          <line>352</line>
+          <line>364</line>
           <option name="timeStamp" value="75" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/small_test.py</url>
-          <line>317</line>
+          <line>329</line>
           <option name="timeStamp" value="77" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/small_test.py</url>
-          <line>301</line>
+          <line>313</line>
           <option name="timeStamp" value="80" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/small_test.py</url>
-          <line>97</line>
+          <line>107</line>
           <option name="timeStamp" value="81" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -342,62 +340,62 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/runner_chordal_axis.py</url>
-          <line>28</line>
+          <line>33</line>
           <option name="timeStamp" value="85" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/small_test.py</url>
-          <line>150</line>
+          <line>160</line>
           <option name="timeStamp" value="94" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/small_test.py</url>
-          <line>298</line>
+          <line>310</line>
           <option name="timeStamp" value="95" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/small_test.py</url>
-          <line>182</line>
+          <line>192</line>
           <option name="timeStamp" value="96" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/small_test.py</url>
-          <line>132</line>
+          <line>142</line>
           <option name="timeStamp" value="98" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/processing/scripts/lib_geosim.py</url>
-          <line>738</line>
+          <line>734</line>
           <option name="timeStamp" value="100" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/processing/scripts/lib_geosim.py</url>
-          <line>1470</line>
+          <line>1463</line>
           <option name="timeStamp" value="101" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/small_test.py</url>
-          <line>295</line>
+          <line>307</line>
           <option name="timeStamp" value="104" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/processing/scripts/lib_geosim.py</url>
-          <line>725</line>
+          <line>721</line>
           <option name="timeStamp" value="112" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/small_test.py</url>
-          <line>18</line>
+          <line>28</line>
           <option name="timeStamp" value="115" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/processing/scripts/lib_geosim.py</url>
-          <line>938</line>
+          <line>934</line>
           <option name="timeStamp" value="116" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/processing/scripts/lib_geosim.py</url>
-          <line>1491</line>
+          <line>1490</line>
           <option name="timeStamp" value="118" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -406,9 +404,19 @@
           <option name="timeStamp" value="120" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/small_test.py</url>
+          <line>17</line>
+          <option name="timeStamp" value="127" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/processing/scripts/lib_geosim.py</url>
-          <line>1426</line>
-          <option name="timeStamp" value="121" />
+          <line>1502</line>
+          <option name="timeStamp" value="128" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/processing/scripts/lib_geosim.py</url>
+          <line>1473</line>
+          <option name="timeStamp" value="129" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

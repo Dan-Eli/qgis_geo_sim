@@ -820,7 +820,7 @@ class Bend(object):
 #        p0 = (lst_coord[bend_j][0], lst_coord[bend_j][1])
 #        p1 = (lst_coord[bend_i][0], lst_coord[bend_i][1])
 #        p2 = (abs(p0[0]) + 1., 0)
-#        angle = GenUtil.angle_vecor(p0, p1, p2)
+#        angle = GenUtil.angle_vector(p0, p1, p2)
 #        #        p0_x = line1_coord[bend_j][0]
 #        #        p0_y = line1_coord[bend_j][1]
 #        #        p1_x = abs(p0_x) + 1.  # In case x == 0

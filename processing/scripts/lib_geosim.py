@@ -1201,7 +1201,7 @@ class ChordalAxis(object):
 
 
 class _TriangleSc(LineStringSc):
-    """LineString specialization to be included in the SpatialContainer"""
+    """LineString1 specialization to be included in the SpatialContainer"""
 
     id = 0
 

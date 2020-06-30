@@ -11,7 +11,7 @@ from collections.abc import Iterable
 from shapely.strtree import STRtree
 
 from qgis.core import QgsFeature, QgsGeometry, QgsProcessingException,  QgsWkbTypes, QgsSpatialIndex, QgsGeometryUtils, \
-                      QgsPoint
+                      QgsPoint, QgsMultiLineString
 
 
 class LineStringSc(LineString):
@@ -658,7 +658,7 @@ class SpatialContainer(object):
         # Extract the features by bounds if requested
         if (qgs_rectangle != None):
             # Extract features by bounds
-            print ("adjust bbox")
+#####            print ("adjust bbox")
             # Adjust the bounding by a very small factor (to avoid extreme case...)
             qgs_rectangle.setXMinimum(qgs_rectangle.xMinimum() - GenUtil.ZERO)
             qgs_rectangle.setYMinimum(qgs_rectangle.yMinimum() - GenUtil.ZERO)
@@ -776,7 +776,7 @@ class ChordalAxis(object):
                                         QgsWkbTypes.PolygonZ):
                 raise QgsProcessingException("Cannot process type: {0}".format(str(triangle.wkbType)))
 
-        print ('Validate that polygon has exactly 3 vertices')
+###        print ('Validate that polygon has exactly 3 vertices')
 
         return
 
@@ -790,15 +790,15 @@ class ChordalAxis(object):
                 coords = list(triangle.coords)
                 # Check number of vertice
                 if len(coords) != 4:
-                    print("Triangle does not contain exactly 4 vertices: {0}".format(coords[0]))
+#####                    print("Triangle does not contain exactly 4 vertices: {0}".format(coords[0]))
                     triangle_valid = False
                 # Check if all geometry are identical
                 if triangle.geom_type != triangle_type:
-                    print("Triangle has mixed geometry type: {0}".format(coords[0]))
+#####                    print("Triangle has mixed geometry type: {0}".format(coords[0]))
                     triangle_valid = False
                 # Check if the triangle is closed
                 if Point(coords[0]).distance(Point(coords[3])) >= ChordalAxis.SEARCH_TOLERANCE:
-                    print("Triangle is not closed: {0}".format(coords[0]))
+#####                    print("Triangle is not closed: {0}".format(coords[0]))
                     triangle_valid = False
 
             # Triangle are polygons
@@ -806,11 +806,11 @@ class ChordalAxis(object):
                 coords = list(triangle.exterior.coords)
                 # Validate triangle has 4 vertice
                 if len(coords) != 4:
-                    print("Triangle does not contain exactly 4 vertices: {0}".format(coords[0]))
+#####                    print("Triangle does not contain exactly 4 vertices: {0}".format(coords[0]))
                     triangle_valid = False
                     # Check if all geometry are identical
                 if triangle.geom_type != triangle_type:
-                    print("Triangle has mixed geometry type: {0}".format(coords[0]))
+####                    print("Triangle has mixed geometry type: {0}".format(coords[0]))
                     triangle_valid = False
 
                 # Transform the polygon into a LineString
@@ -888,7 +888,7 @@ class ChordalAxis(object):
                 # Remove from the triangle from the dictionary
                 del dict_triangles[triangle.id]
                 # Process the adjacent sides
-                for adjacent_side_ref in (triangle.adjacent_sides_ref):
+                for adjacent_side_ref in (triangle.adjacent_sides_ref()):
                     if adjacent_side_ref is not None:
                         if adjacent_side_ref.id in dict_triangles:
                             stack.append(adjacent_side_ref)  # Simulate recursivity
@@ -929,19 +929,36 @@ class ChordalAxis(object):
             centre_lines = []
             # Process each triangle of one cluster
             for triangle in triangle_cluster:
-                centre_lines += triangle.centre_line
+                centre_lines += triangle.centre_line()
+                l = centre_lines[-1]
+                a = l.length()
+
+
+            qgs_features = []
+            for line in centre_lines:
+                qgs_feature = QgsFeature()
+                qgs_feature.setGeometry(line)
+                qgs_features.append(qgs_feature)
+
+#            return qgs_features
+
+
 
             qgs_line_strings = []
+            multi_line = QgsMultiLineString()
             for line in centre_lines:
-                qgs_line_strings.append(line.asPolyline())
-            multi_line_string = QgsGeometry.fromMultiPolylineXY(qgs_line_strings)
-            multi_line_merged = multi_line_string.mergeLines()
+                linea = line.get()
+                multi_line.addGeometry(linea.clone())
+#            multi_line_string = QgsGeometry.fromMultiPolylineXY(qgs_line_strings)
+            geom_multi_line = QgsGeometry(multi_line)
+            multi_line_merged = geom_multi_line.mergeLines()
 
             # Transform the multi line merged into a list of QGS Feature
-            qgs_features = []
-            for part in multi_line_merged.constParts():
+#            qgs_features = []
+            lst_parts = list(multi_line_merged.constParts())
+            for part in lst_parts:
                 qgs_feature = QgsFeature()
-                qgs_feature.setGeometry(part)
+                qgs_feature.setGeometry(part.clone())
                 qgs_features.append(qgs_feature)
 
         return qgs_features
@@ -1023,7 +1040,7 @@ class ChordalAxis(object):
                         self.nbr_x_junction += 1
                         # Set some attribute in the triangle
                         first_junction.type = ChordalAxis.JUNCTION_X_FIRST
-                        first_junction.junction_x_mid_pnt_sides = junction_x_infos.mid_pnt_sides
+                        first_junction.junction_x_mid_pnt_sides = junction_x_infos.mid_pnt_sides()
                         first_junction.junction_x_centroid = junction_x_infos.x_centroid
                         last_junction.type = ChordalAxis.JUNCTION_X_LAST
                         for sleeve_triangle in junction_x_infos.sleeve_in_branch:
@@ -1064,7 +1081,7 @@ class ChordalAxis(object):
         if sides_t_junction is None:
             branches = []
             # Loop each branch of the junction triangle
-            for next_triangle in junction_triangle.adjacent_sides_ref:
+            for next_triangle in junction_triangle.adjacent_sides_ref():
                 if next_triangle.type == ChordalAxis.SLEEVE:
                     branch = Branch(junction_triangle, next_triangle)
                     branches.append(branch)
@@ -1100,7 +1117,7 @@ class ChordalAxis(object):
 
         junction_x_infos = []
         #  Loop over each branch of the junction triangle
-        for adjacent_junction in current_junction.adjacent_sides_ref:
+        for adjacent_junction in current_junction.adjacent_sides_ref():
             branch = Branch(current_junction, adjacent_junction)
             last_triangle = branch.triangle_in_branch[-1]  # Extract the last triangle of the branch
 
@@ -1116,7 +1133,7 @@ class ChordalAxis(object):
                     merged_line = LineString(merged_pol.exterior.coords)
 
                     # Detect which mid side point we must keep (we must keep four only)
-                    mid_pnt_sides = current_junction.mid_pnt_sides + last_triangle.mid_pnt_sides
+                    mid_pnt_sides = current_junction.mid_pnt_sides() + last_triangle.mid_pnt_sides()
                     new_mid_pnt_sides = []
                     for mid_pnt_side in mid_pnt_sides:
                         if mid_pnt_side.distance(merged_line) < ChordalAxis.SEARCH_TOLERANCE:
@@ -1187,7 +1204,7 @@ class ChordalAxis(object):
 
         branches = []
 
-        for next_triangle in junction_triangle.adjacent_sides_ref:
+        for next_triangle in junction_triangle.adjacent_sides_ref():
             branch = Branch(junction_triangle, next_triangle)
             # Only branches below tolrance and finishing with a Terminal triangle
             if branch.last_triangle_type == ChordalAxis.TERMINAL and branch.length <= junction_triangle.width:
@@ -1230,7 +1247,7 @@ class ChordalAxis(object):
                 # Accumulate each triangle of each branch
                 for triangle in branch.triangle_in_branch:
                     # Special case for the triangle that are referenced (adjacent) by the junction triangle
-                    for ref_triangle in triangle.adjacent_sides_ref:
+                    for ref_triangle in triangle.adjacent_sides_ref():
                         if ref_triangle is not None:
                             triangles_to_reset.append(ref_triangle)
                     triangles_to_isolate.append(triangle)
@@ -1280,8 +1297,47 @@ class GsTriangle(QgsFeature):
         self.coords = [(self.p0.x(), self.p0.y()), (self.p1.x(), self.p1.y()), (self.p2.x(), self.p2.y())]
         self.setGeometry(geom)
 
-    @property
-    def mid_pnt_sides(self):
+#     @property
+#     def mid_pnt_sides(self):
+#         """Attribute function to extract the mid point of each side of the triangle
+#         This attribute function is using on the fly calculation to extract theattribute
+#         A junction is a valid T junction when the 3 branches of a triangle is composed of sleeve or terminal triangle;  and each branch is of a certain length
+#         and 2 of the branches form an almost straight line.
+#         Parameters
+#         ----------
+#         None
+#         Return
+#         ------
+#         list
+#             List containing the coordinate (x,y) the mid point of each side of the triangle
+#         """
+#
+#         try:
+#             # Implement attribute late calculation
+#             return self._mid_pnt_sides
+#         except AttributeError:
+#             if not hasattr(self, 'junction_x_mid_pnt_sides'):
+#                 # Calculate the mid point of each side of the triangle
+#                 mid_pnt_side_0 = QgsGeometryUtils.midpoint(QgsPoint(self.p0), QgsPoint(self.p1))
+#                 mid_pnt_side_1 = QgsGeometryUtils.midpoint(QgsPoint(self.p1), QgsPoint(self.p2))
+#                 mid_pnt_side_2 = QgsGeometryUtils.midpoint(QgsPoint(self.p2), QgsPoint(self.p0))
+#
+# #                line1 = QgsGeometry.fromPolylineXY((self.p1, self.p2))
+# #                mid_pnt_side_1 = line1.interpolate(line1.length() / 2.)
+#
+# #                line2 = QgsGeometry.fromPolylineXY((self.p2, self.p0))
+# #                mid_pnt_side_2 = line2.interpolate(line2.length() / 2.)
+#
+# #                mid_pnt_side_0 = LineString([coords[0], coords[1]]).interpolate(0.5, normalized=True)
+# #                mid_pnt_side_1 = LineString((coords[1], coords[2])).interpolate(0.5, normalized=True)
+# #                mid_pnt_side_2 = LineString((coords[2], coords[0])).interpolate(0.5, normalized=True)
+#                 self._mid_pnt_sides = [mid_pnt_side_0, mid_pnt_side_1, mid_pnt_side_2]
+#             else:
+#                 # The feature is not anymore a triangle use pre-calculate value
+#                 self._mid_pnt_sides = self.junction_x_mid_pnt_sides
+#             return self._mid_pnt_sides
+
+    def mid_pnt_sides(self, i=None):
         """Attribute function to extract the mid point of each side of the triangle
         This attribute function is using on the fly calculation to extract theattribute
         A junction is a valid T junction when the 3 branches of a triangle is composed of sleeve or terminal triangle;  and each branch is of a certain length
@@ -1295,32 +1351,63 @@ class GsTriangle(QgsFeature):
             List containing the coordinate (x,y) the mid point of each side of the triangle
         """
 
-        try:
+        if None != None:
             # Implement attribute late calculation
             return self._mid_pnt_sides
-        except AttributeError:
+        else:
             if not hasattr(self, 'junction_x_mid_pnt_sides'):
                 # Calculate the mid point of each side of the triangle
                 mid_pnt_side_0 = QgsGeometryUtils.midpoint(QgsPoint(self.p0), QgsPoint(self.p1))
                 mid_pnt_side_1 = QgsGeometryUtils.midpoint(QgsPoint(self.p1), QgsPoint(self.p2))
                 mid_pnt_side_2 = QgsGeometryUtils.midpoint(QgsPoint(self.p2), QgsPoint(self.p0))
 
-#                line1 = QgsGeometry.fromPolylineXY((self.p1, self.p2))
-#                mid_pnt_side_1 = line1.interpolate(line1.length() / 2.)
-
-#                line2 = QgsGeometry.fromPolylineXY((self.p2, self.p0))
-#                mid_pnt_side_2 = line2.interpolate(line2.length() / 2.)
-
-#                mid_pnt_side_0 = LineString([coords[0], coords[1]]).interpolate(0.5, normalized=True)
-#                mid_pnt_side_1 = LineString((coords[1], coords[2])).interpolate(0.5, normalized=True)
-#                mid_pnt_side_2 = LineString((coords[2], coords[0])).interpolate(0.5, normalized=True)
                 self._mid_pnt_sides = [mid_pnt_side_0, mid_pnt_side_1, mid_pnt_side_2]
+                if i != None:
+                    self._mid_pnt_sides = self._mid_pnt_sides[i]
+
             else:
                 # The feature is not anymore a triangle use pre-calculate value
                 self._mid_pnt_sides = self.junction_x_mid_pnt_sides
+
             return self._mid_pnt_sides
 
-    @property
+    # @property
+    # def type(self):
+    #     """Attribute function to extract the type of triangle
+    #     This attribute function is using on the fly calculation to extract the attribute
+    #     Parameters
+    #     ----------
+    #     None
+    #     Return
+    #     ------
+    #     int
+    #         The type of the triangle
+    #     """
+    #
+    #     try:
+    #         # Attribute late calculation
+    #         return self._type
+    #     except AttributeError:
+    #         nbr_side = 0
+    #         for adjacent_side_ref in self.adjacent_sides_ref():
+    #             if adjacent_side_ref != None:
+    #                 nbr_side += 1
+    #
+    #         if nbr_side == 0:
+    #             self._type = ChordalAxis.ISOLATED
+    #         elif nbr_side == 1:
+    #             self._type = ChordalAxis.TERMINAL
+    #         elif nbr_side == 2:
+    #             self._type = ChordalAxis.SLEEVE
+    #         elif nbr_side == 3:
+    #             self._type = ChordalAxis.JUNCTION
+    #             if hasattr(self, 'junction_side_a'):
+    #                 self._type = ChordalAxis.JUNCTION_T  # Junction form a T Junction
+    #         elif nbr_side >= 4:
+    #             raise GeoSimException ('Internal error...!!!')
+    #
+    #         return self._type
+
     def type(self):
         """Attribute function to extract the type of triangle
         This attribute function is using on the fly calculation to extract the attribute
@@ -1333,12 +1420,14 @@ class GsTriangle(QgsFeature):
             The type of the triangle
         """
 
-        try:
+        if None != None:
             # Attribute late calculation
             return self._type
-        except AttributeError:
+
+        else:
+
             nbr_side = 0
-            for adjacent_side_ref in self.adjacent_sides_ref:
+            for adjacent_side_ref in self.adjacent_sides_ref():
                 if adjacent_side_ref != None:
                     nbr_side += 1
 
@@ -1357,28 +1446,51 @@ class GsTriangle(QgsFeature):
 
             return self._type
 
-    @type.setter
-    def type(self, value):
-        """Attribute function to set the type of triangle
-        There is a special case where for X junction we delete the centre line
-        Parameters
-        ----------
-        Value : int
-            The type of the triangle
-        Return
-        ------
-        None
-        """
+#    @type.setter
+#    def type(self, value):
+#        """Attribute function to set the type of triangle
+#        There is a special case where for X junction we delete the centre line
+#        Parameters
+#        ----------
+#        Value : int
+#            The type of the triangle
+#        Return
+#        ------
+#        None
+#        """
+#
+#        self._type = value
+#
+#        if self._type in ( ChordalAxis.JUNCTION_X_FIRST, ChordalAxis.JUNCTION_X_LAST, ChordalAxis.SLEEVE_X):
+#            try:
+#                del self._centre_line
+#            except AttributeError:
+#                pass
 
-        self._type = value
+    # @property
+    # def width(self):
+    #     """Attribute function to extract the width of a junction triangle
+    #     This attribute function is using on the fly calculation to extract the attribute.
+    #     the width of the triangle is 2 times the length of the longest centre line of a junction triangle
+    #     Parameters
+    #     ----------
+    #     None
+    #     Return
+    #     ------
+    #     real
+    #         The width of the triangle
+    #     """
+    #
+    #     try:
+    #         # On the fly calculation
+    #         return self._width
+    #     except AttributeError:
+    #         lst_length = [line.length for line in self.centre_line]
+    #         max_length = max(lst_length)
+    #         self._width = max_length * 2.
+    #
+    #         return self._width
 
-        if self._type in ( ChordalAxis.JUNCTION_X_FIRST, ChordalAxis.JUNCTION_X_LAST, ChordalAxis.SLEEVE_X):
-            try:
-                del self._centre_line
-            except AttributeError:
-                pass
-
-    @property
     def width(self):
         """Attribute function to extract the width of a junction triangle
         This attribute function is using on the fly calculation to extract the attribute.
@@ -1392,18 +1504,57 @@ class GsTriangle(QgsFeature):
             The width of the triangle
         """
 
-        try:
+        if None != None:
             # On the fly calculation
             return self._width
-        except AttributeError:
+        else:
             lst_length = [line.length for line in self.centre_line]
             max_length = max(lst_length)
             self._width = max_length * 2.
 
             return self._width
 
-    @property
-    def adjacent_sides_ref(self):
+    # @property
+    # def adjacent_sides_ref(self):
+    #     """Attribute function to extract the adjacent triangle
+    #     This attribute function is using on the fly calculation to extract the attribute
+    #     Parameters
+    #     ----------
+    #     None
+    #     Return
+    #     ------
+    #     list
+    #         List of 3 containing a reference to the adjacent triangle
+    #     """
+    #
+    #     try:
+    #         # On the fly calculation
+    #         return self._adjacent_sides_ref
+    #     except AttributeError:
+    #
+    #         self._adjacent_sides_ref = []
+    #         # Loop on each side (each mid_pnt_side) to find adjacent triangles
+    #         for mid_pnt_side in self.mid_pnt_sides():
+    #
+    #             # Find all potential adjacent triangles
+    #             potential_triangles = GsTriangle.s_container.get_features(qgs_rectangle=mid_pnt_side.boundingBox(), remove_features=[self])
+    #             # Find the closest triangle
+    #             geom_mid_pnt_side = QgsGeometry(mid_pnt_side)
+    #             triangles = [(triangle, geom_mid_pnt_side.distance(triangle.geometry())) for triangle in potential_triangles]
+    #             sorted(triangles, key=lambda triangle: triangle[1])  # Sort by distance
+    #             triangles = [triangle for (triangle, distance) in triangles if distance < ChordalAxis.SEARCH_TOLERANCE]
+    #             if len(triangles) == 0:
+    #                 self._adjacent_sides_ref.append(None)  # No  triangle
+    #             if len(triangles) == 1:
+    #                 self._adjacent_sides_ref.append(triangles[0])
+    #             elif len(triangles) >= 1:
+    #                 xy = (mid_pnt_side.x, mid_pnt_side.y)
+    #                 print("***Warning*** Triangles may be to small: {0} Try to simplify them (e.g. Douglas Peucker)".format(xy))
+    #                 self._adjacent_sides_ref.append(triangles[0])
+    #
+    #         return self._adjacent_sides_ref
+
+    def adjacent_sides_ref(self, i=None):
         """Attribute function to extract the adjacent triangle
         This attribute function is using on the fly calculation to extract the attribute
         Parameters
@@ -1415,19 +1566,20 @@ class GsTriangle(QgsFeature):
             List of 3 containing a reference to the adjacent triangle
         """
 
-        try:
+        if None != None:
             # On the fly calculation
             return self._adjacent_sides_ref
-        except AttributeError:
+
+        else:
 
             self._adjacent_sides_ref = []
             # Loop on each side (each mid_pnt_side) to find adjacent triangles
-            for mid_pnt_side in self.mid_pnt_sides:
+            for mid_pnt_side in self.mid_pnt_sides():
 
                 # Find all potential adjacent triangles
                 potential_triangles = GsTriangle.s_container.get_features(qgs_rectangle=mid_pnt_side.boundingBox(), remove_features=[self])
                 # Find the closest triangle
-                geom_mid_pnt_side = QgsGeometry(mid_pnt_side)
+                geom_mid_pnt_side = QgsGeometry(mid_pnt_side.clone())
                 triangles = [(triangle, geom_mid_pnt_side.distance(triangle.geometry())) for triangle in potential_triangles]
                 sorted(triangles, key=lambda triangle: triangle[1])  # Sort by distance
                 triangles = [triangle for (triangle, distance) in triangles if distance < ChordalAxis.SEARCH_TOLERANCE]
@@ -1436,13 +1588,99 @@ class GsTriangle(QgsFeature):
                 if len(triangles) == 1:
                     self._adjacent_sides_ref.append(triangles[0])
                 elif len(triangles) >= 1:
-                    xy = (mid_pnt_side.x, mid_pnt_side.y)
-                    print("***Warning*** Triangles may be to small: {0} Try to simplify them (e.g. Douglas Peucker)".format(xy))
+                    xy = (mid_pnt_side.x(), mid_pnt_side.y())
+####                    print("***Warning*** Triangles may be to small: {0} Try to simplify them (e.g. Douglas Peucker)".format(xy))
                     self._adjacent_sides_ref.append(triangles[0])
+
+            if i != None:
+                self._adjacent_sides_ref = self._adjacent_sides_ref[i]
 
             return self._adjacent_sides_ref
 
-    @property
+    # @property
+    # def centre_line(self):
+    #     """Attribute function to extract the centre line of a triangle
+    #     This attribute function is using on the fly calculation to extract the attribute.
+    #     The centre line depends on the type of triangle each type of triangle having a different representation of centre line
+    #     Parameters
+    #     ----------
+    #     None
+    #     Return
+    #     ------
+    #     List
+    #         Zero to 4 LineString defining the centre line of the triangle
+    #     """
+    #     try:
+    #         # On the fly attribute calculation
+    #         return self._centre_line
+    #     except AttributeError:
+    #
+    #         centre_line = []
+    #         coords = self.coords
+    #         qgs_points = GenUtil.coords_to_qgs_pnt(coords)
+    #
+    #         # Process each case depending on the number of internal side of the triangle
+    #         if self.type == ChordalAxis.ISOLATED:
+    #             # Degenerated polygon with one triangle no skeleton line added
+    #             pass
+    #
+    #         elif self._type == ChordalAxis.TERMINAL:
+    #             # Terminal triangle add line from the extremity of the triangle up to mid opposite side
+    #             if self.adjacent_sides_ref[0] != None:
+    #                 coords_line = [qgs_points[2], self.mid_pnt_sides(0)]
+    #             if self.adjacent_sides_ref[1] != None:
+    #                 coords_line = [qgs_points[0], self.mid_pnt_sides(1)]
+    #             if self.adjacent_sides_ref[2] != None:
+    #                 coords_line = [qgs_points[1], self.mid_pnt_sides(2)]
+    #
+    #             centre_line.append(QgsGeometry.fromPolyline(coords_line))
+    #
+    #         elif self.type == ChordalAxis.SLEEVE:
+    #             # Sleeve triangle skeleton added between the mid point of side adjacent to another triangle
+    #             mid_pnt = []
+    #             for i, adjacent_side_ref in enumerate(self.adjacent_sides_ref):
+    #                 if adjacent_side_ref != None:
+    #                     mid_pnt.append(self.mid_pnt_sides(i))
+    #             centre_line.append(QgsGeometry.fromPolyline([mid_pnt[0], mid_pnt[1]]))
+    #
+    #         elif self.type == ChordalAxis.SLEEVE_X:
+    #             # No center line to create
+    #             pass
+    #
+    #         elif self.type == ChordalAxis.JUNCTION:
+    #             # Regular triangle T type. Centroid is the centroid of the triangle
+    #             pnt_x = (coords[0][0] + coords[1][0] + coords[2][0]) / 3.
+    #             pnt_y = (coords[0][1] + coords[1][1] + coords[2][1]) / 3.
+    #             centroid = QgsPoint(pnt_x, pnt_y)
+    #             # Create the centre line
+    #             for mid_side_pnt in self.mid_pnt_sides():
+    #                 centre_line.append(QgsGeometry.fromPolyline([centroid, mid_side_pnt]))
+    #
+    #         elif self.type == ChordalAxis.JUNCTION_T:
+    #             # Corrected triangle T. Centroid is the middle point between the 2 aligned branches
+    #             pnt0 = self.mid_pnt_sides(self.junction_side_a)
+    #             pnt1 = self.mid_pnt_sides(self.junction_side_b)
+    #             pnt = LineString([(pnt0.x, pnt0.y), (pnt1.x, pnt1.y)]).interpolate(0.5, normalized=True)
+    #             centroid = [pnt.x, pnt.y]
+    #             # Create the centre line
+    #             for mid_side_pnt in self.mid_pnt_sides():
+    #                 centre_line.append(LineString([centroid, mid_side_pnt]))
+    #
+    #         elif self.type == ChordalAxis.JUNCTION_X_FIRST:
+    #             centroid = (self.junction_x_centroid.x, self.junction_x_centroid.y)
+    #             #  create the center line
+    #             for mid_pnt_side in self.junction_x_mid_pnt_sides:
+    #                 centre_line.append(LineString([centroid, mid_pnt_side]))
+    #
+    #         elif self.type == ChordalAxis.JUNCTION_X_LAST:
+    #             # No center line to create
+    #             pass
+    #
+    #         else:
+    #             raise GeoSimException ("Unknow triangle type: {1}".format(self.type))
+    #
+    #         return centre_line
+
     def centre_line(self):
         """Attribute function to extract the centre line of a triangle
         This attribute function is using on the fly calculation to extract the attribute.
@@ -1455,75 +1693,70 @@ class GsTriangle(QgsFeature):
         List
             Zero to 4 LineString defining the centre line of the triangle
         """
-        try:
+        if None != None:
             # On the fly attribute calculation
             return self._centre_line
-        except AttributeError:
+
+        else:
 
             centre_line = []
             coords = self.coords
             qgs_points = GenUtil.coords_to_qgs_pnt(coords)
 
             # Process each case depending on the number of internal side of the triangle
-            if self.type == ChordalAxis.ISOLATED:
+            if self.type() == ChordalAxis.ISOLATED:
                 # Degenerated polygon with one triangle no skeleton line added
                 pass
 
-            elif self._type == ChordalAxis.TERMINAL:
+            elif self.type() == ChordalAxis.TERMINAL:
                 # Terminal triangle add line from the extremity of the triangle up to mid opposite side
-                if self.adjacent_sides_ref[0] != None:
-                    coords_line = [qgs_points[2], self.mid_pnt_sides[0]]
-                if self.adjacent_sides_ref[1] != None:
-                    try:
-                        print (self.mid_pnt_sides)
-                    except Exception:
-                        import traceback
-                        traceback.print_exc()
-                    print (self.mid_pnt_sides[1])
-                    coords_line = [qgs_points[0], self.mid_pnt_sides[1]]
-                if self.adjacent_sides_ref[2] != None:
-                    coords_line = [qgs_points[1], self.mid_pnt_sides[2]]
+                if self.adjacent_sides_ref(0) != None:
+                    coords_line = [qgs_points[2], self.mid_pnt_sides(0)]
+                if self.adjacent_sides_ref(1) != None:
+                    coords_line = [qgs_points[0], self.mid_pnt_sides(1)]
+                if self.adjacent_sides_ref(2) != None:
+                    coords_line = [qgs_points[1], self.mid_pnt_sides(2)]
 
                 centre_line.append(QgsGeometry.fromPolyline(coords_line))
 
-            elif self.type == ChordalAxis.SLEEVE:
+            elif self.type() == ChordalAxis.SLEEVE:
                 # Sleeve triangle skeleton added between the mid point of side adjacent to another triangle
                 mid_pnt = []
-                for i, adjacent_side_ref in enumerate(self.adjacent_sides_ref):
+                for i, adjacent_side_ref in enumerate(self.adjacent_sides_ref()):
                     if adjacent_side_ref != None:
-                        mid_pnt.append(self.mid_pnt_sides[i])
+                        mid_pnt.append(self.mid_pnt_sides(i))
                 centre_line.append(QgsGeometry.fromPolyline([mid_pnt[0], mid_pnt[1]]))
 
-            elif self.type == ChordalAxis.SLEEVE_X:
+            elif self.type() == ChordalAxis.SLEEVE_X:
                 # No center line to create
                 pass
 
-            elif self.type == ChordalAxis.JUNCTION:
+            elif self.type() == ChordalAxis.JUNCTION:
                 # Regular triangle T type. Centroid is the centroid of the triangle
                 pnt_x = (coords[0][0] + coords[1][0] + coords[2][0]) / 3.
                 pnt_y = (coords[0][1] + coords[1][1] + coords[2][1]) / 3.
-                centroid = [pnt_x, pnt_y]
+                centroid = QgsPoint(pnt_x, pnt_y)
                 # Create the centre line
-                for mid_side_pnt in self.mid_pnt_sides:
-                    centre_line.append(LineString([centroid, mid_side_pnt]))
+                for mid_side_pnt in self.mid_pnt_sides():
+                    centre_line.append(QgsGeometry.fromPolyline([centroid.clone(), mid_side_pnt.clone()]))
 
-            elif self.type == ChordalAxis.JUNCTION_T:
+            elif self.type() == ChordalAxis.JUNCTION_T:
                 # Corrected triangle T. Centroid is the middle point between the 2 aligned branches
-                pnt0 = self.mid_pnt_sides[self.junction_side_a]
-                pnt1 = self.mid_pnt_sides[self.junction_side_b]
+                pnt0 = self.mid_pnt_sides(self.junction_side_a)
+                pnt1 = self.mid_pnt_sides(self.junction_side_b)
                 pnt = LineString([(pnt0.x, pnt0.y), (pnt1.x, pnt1.y)]).interpolate(0.5, normalized=True)
                 centroid = [pnt.x, pnt.y]
                 # Create the centre line
-                for mid_side_pnt in self.mid_pnt_sides:
+                for mid_side_pnt in self.mid_pnt_sides():
                     centre_line.append(LineString([centroid, mid_side_pnt]))
 
-            elif self.type == ChordalAxis.JUNCTION_X_FIRST:
+            elif self.type() == ChordalAxis.JUNCTION_X_FIRST:
                 centroid = (self.junction_x_centroid.x, self.junction_x_centroid.y)
                 #  create the center line
                 for mid_pnt_side in self.junction_x_mid_pnt_sides:
                     centre_line.append(LineString([centroid, mid_pnt_side]))
 
-            elif self.type == ChordalAxis.JUNCTION_X_LAST:
+            elif self.type() == ChordalAxis.JUNCTION_X_LAST:
                 # No center line to create
                 pass
 
@@ -1585,7 +1818,7 @@ class Branch:
 
             # Loop for the next adjacent triangle
             if self.length < max_length:
-                adjacents = [adjacent for adjacent in next_triangle.adjacent_sides_ref if adjacent is not None]
+                adjacents = [adjacent for adjacent in next_triangle.adjacent_sides_ref() if adjacent is not None]
                 if adjacents[0].id == current_triangle.id:
                     current_triangle, next_triangle = next_triangle, adjacents[1]
                 else:

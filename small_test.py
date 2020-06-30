@@ -4,7 +4,7 @@ import processing
 
 from qgis.analysis import QgsNativeAlgorithms
 from qgis.core import QgsApplication, QgsGeometry, QgsPoint, QgsPointXY, QgsTriangle, QgsFeature, QgsWkbTypes, \
-                      QgsSpatialIndex, QgsFeature, QgsRectangle, QgsLineString
+                      QgsSpatialIndex, QgsFeature, QgsRectangle, QgsLineString, QgsMultiPoint
 from processing.core.Processing import Processing
 from shapely.geometry import LineString
 from datetime import datetime
@@ -12,19 +12,82 @@ import random
 from shapely.strtree import STRtree
 import random, time
 
+
+
 def use_same_qgspoint():
     """Use the same QgsPoint 2 times"""
+
+    a = [(1,2),(3,4),(5,6)]
+    x = [aa[0] for aa in a]
+    y = [aa[1] for aa in a]
+    aa = list(zip(a[0], a[1]))
+
+    a = QgsPoint(0,0)
+    b = QgsPoint(1,1)
+    line1 = QgsLineString([a, b])
+    line2 = QgsLineString([a, b])
+    line3 = QgsLineString([a, b])
+    line4 = QgsLineString([a, b])
+    type = a.wkbType()
+    a.setX(5)
+    v = line1.childPoint(0)
+
+
+    for i in range(100):
+        ageom = QgsGeometry()
+        amulti = QgsMultiPoint()
+        amulti.addGeometry(a)
+        amulti.addGeometry(b)
+
+
+    line1 = QgsLineString([0., 1., 2], [3., 4., 5.])
 
     p0 = QgsPointXY(0,0)
     p1 = QgsPointXY(1,1)
 
-    geom0 = QgsGeometry.fromPolylineXY([p0,p1])
-    geom1 = QgsGeometry.fromPolylineXY([p0,p1])
+    for i in range(100):
+        geom1 = QgsGeometry.fromPolylineXY([p0, p1])
+        geom11 = geom1.get()
+        geom2 = QgsGeometry.fromPolylineXY([p0, p1])
 
-    return (geom0,geom1)
+    p0 = QgsPoint(0, 0)
+    p1 = QgsPoint(1, 1)
+    for i in range(100):
+        geom0 = QgsGeometry(QgsGeometry(p0))
+        geom1 = QgsGeometry(QgsGeometry(p1))
+        #geom2 = QgsGeometry(p0.clone())
+#        geom0 = QgsGeometry.fromPointXY(p0)
+#        geom1 = QgsGeometry(p1.clone())
+#        geom2 = QgsGeometry(p0.clone())
+
+    return (geom0,geom1, geom2)
 
 def merge_lines():
     """Merge line from a multi line string"""
+
+    qgs_line_strings = []
+    centre_lines = []
+    centre_lines.append(QgsGeometry.fromPolyline([QgsPoint(0, 0), QgsPoint(10, 10)]))
+    centre_lines.append(QgsGeometry.fromPolyline([QgsPoint(10, 10), QgsPoint(20, 20)]))
+    centre_lines.append(QgsGeometry.fromPolyline([QgsPoint(10, 10), QgsPoint(20, 10)]))
+
+    for line in centre_lines:
+        qgs_line_strings.append(line.asPolyline())
+    multi_line_string = QgsGeometry.fromMultiPolylineXY(qgs_line_strings)
+    multi_line_merged = multi_line_string.mergeLines()
+
+    # Transform the multi line merged into a list of QGS Feature
+    qgs_features = []
+    for part in multi_line_merged.parts():
+        new_geom = QgsGeometry(part.clone())
+        qgs_feature = QgsFeature()
+        qgs_feature.setGeometry(new_geom)
+        qgs_features.append(qgs_feature)
+
+    return qgs_features
+
+
+
 
     geom1 = QgsGeometry.fromPolyline([QgsPoint(0, 0), QgsPoint(10, 10)])
     geom2 = QgsGeometry.fromPolyline([QgsPoint(20, 20), QgsPoint(30, 30)])
@@ -154,11 +217,11 @@ def test_access_coord():
     line2 = QgsGeometry.fromPolyline((QgsPoint(0,0), QgsPoint(1,1)))
     gt = line2.get()
 
-
+    # test with Shapely
     lst_shapely = []
     lst_qgis = []
     nbr_loop = 2000
-    nbr_vert = 100
+    nbr_vert = 1000
     sec1 = time.time()
     for j in range(nbr_loop):
         coords = ([i+j,i+j] for i in range(nbr_vert))
@@ -167,15 +230,28 @@ def test_access_coord():
 
     sec2 = time.time()
     print ("Build shapely: ",sec2-sec1)
+    
+    # test with QGIS: .fromPolyline
     for j in range(nbr_loop):
         pxy = (QgsPoint(i+j, i+j) for i in range(nbr_vert))
         geom = QgsGeometry.fromPolyline(pxy)
         lst_qgis.append(geom)
 
     sec3 = time.time()
-    print("Build QGS: ",sec3 - sec2)
+    print("Build QGS#1: ",sec3 - sec2)
+    
+   # test with QGIS: LineString Constructor
+    for j in range(nbr_loop):
+        px = [x for x in range(nbr_vert)]
+        py = [y+1 for y in range(nbr_vert)]
+        geom = QgsLineString(px,py)
+        geom1 = QgsGeometry(geom)
+        lst_qgis.append(geom)
 
-    print ("GO***")
+    sec4 = time.time()
+    print("Build QGS#2: ",sec4 - sec3)
+
+
     #Test Shapely speed
     l = 0
     sec1 = time.time()
@@ -297,6 +373,8 @@ app.initQgis()
 
 
 #-------------------------------------
+
+test_access_coord()
 
 #Use same points
 use_same_qgspoint()

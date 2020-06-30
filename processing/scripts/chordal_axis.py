@@ -96,11 +96,15 @@ def chordal_axis(instance, parameters, context, feedback, inputs):
             traceback.print_exc()
 
         # Load the centre line in the sink
-        for line in centre_lines:
-            out_feature = QgsFeature()
-            qgis_geom = shapely_to_qgis(line)
-            out_feature.setGeometry(qgis_geom)
-            sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
+        for qgis_line in centre_lines:
+#            out_feature = QgsFeature()
+#            qgis_geom = shapely_to_qgis(line)
+#            out_feature.setGeometry(qgis_geom)
+            try:
+                sink.addFeature(qgis_line, QgsFeatureSink.FastInsert)
+            except Exception:
+                import traceback
+                traceback.print_exc()
             nbr_centre_line + 1
 
         if feedback.isCanceled():

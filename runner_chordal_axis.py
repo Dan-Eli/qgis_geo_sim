@@ -2,6 +2,8 @@
 
 import processing
 
+#import lib_geosim
+
 from qgis.analysis import QgsNativeAlgorithms
 from qgis.core import QgsApplication, QgsFeatureRequest
 from processing.core.Processing import Processing
@@ -24,11 +26,13 @@ Processing.initialize()
 #context.setInvalidGeometryCheck(QgsFeatureRequest.GeometryNoCheck)
 
 
+
 # Call the processing script
 try:
-    msg = processing.run("script:chordal_axis", { 'INPUT':r'C:\Users\berge\PycharmProjects\qgis_geo_sim\test5.gpkg|layername=test5',
+
+    msg = processing.run("script:chordal_axis", { 'INPUT':r'D:\OneDrive\RNCan\Post_Traitement\Test.gpkg|layername=Triangles',
                                                   'CORRECTION':True,
-                                                  'OUTPUT':r'C:\Users\berge\PycharmProjects\qgis_geo_sim\road_skeleton_out12321.gpkg'} )
+                                                  'OUTPUT':r'C:\Users\berge\PycharmProjects\qgis_geo_sim\road_skeleton_out12332.gpkg'} )
 except Exception:
     import traceback
     traceback.print_exc()

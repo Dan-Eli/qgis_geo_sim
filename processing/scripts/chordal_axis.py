@@ -79,22 +79,22 @@ def chordal_axis(instance, parameters, context, feedback, inputs):
 
     features = source.getFeatures()
     for i, feature in enumerate(features):
-        qgis_geom = feature.geometry()
-        lst_triangle = []
+#        qgis_geom = feature.geometry()
+#        lst_triangle = []
 
-        for part in qgis_geom.constParts():
-            # Transform each part into polygon
-            part = to_polygon(part)
-            shapely_part = qgis_to_shapely(part)
-            if len(shapely_part.exterior.coords) != 4:
-                raise QgsProcessingException("A triangle polygon must have exactly four vertice")
-            line = LineString(shapely_part.exterior.coords)
-            lst_triangle.append(line)
-            nbr_triangle += 1
+#        for part in qgis_geom.constParts():
+#            # Transform each part into polygon
+#            part = to_polygon(part)
+#            shapely_part = qgis_to_shapely(part)
+#            if len(shapely_part.exterior.coords) != 4:
+#                raise QgsProcessingException("A triangle polygon must have exactly four vertice")
+#            line = LineString(shapely_part.exterior.coords)
+#            lst_triangle.append(line)
+#            nbr_triangle += 1
 
         # Call the chordal axis
         try:
-            ca = ChordalAxis(lst_triangle, GenUtil.ZERO)
+            ca = ChordalAxis(feature, GenUtil.ZERO)
             if correction:
                 ca.correct_skeleton()
             centre_lines = ca.get_skeleton()
@@ -105,8 +105,8 @@ def chordal_axis(instance, parameters, context, feedback, inputs):
         # Load the centre line in the sink
         for line in centre_lines:
             out_feature = QgsFeature()
-            qgis_geom = shapely_to_qgis(line)
-            out_feature.setGeometry(qgis_geom)
+            geom_feature = QgsGeometry(line.clone())
+            out_feature.setGeometry(geom_feature)
             sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
             nbr_centre_line + 1
 

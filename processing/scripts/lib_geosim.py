@@ -605,7 +605,6 @@ class SpatialContainer(object):
     def del_features(self, features):
         """Delete a list of features in the spatial container
 
-
         *Parameters*:
             - features: list of features to delete
         *Returns*:

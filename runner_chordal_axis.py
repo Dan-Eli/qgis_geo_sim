@@ -11,7 +11,7 @@ from processing.tools import dataobjects
 
 
 # Supply path to qgis install location
-QgsApplication.setPrefixPath("C:\\OSGEO4~1\\apps\\qgis", False)
+QgsApplication.setPrefixPath("/usr/bin/qgis", False)
 
 #profile_folder = 'C:\\Users\\berge\\AppData\\Roaming\\QGIS\\QGIS3\\profiles\\test12'
 profile_folder = '.'
@@ -30,9 +30,9 @@ Processing.initialize()
 # Call the processing script
 try:
 
-    msg = processing.run("script:chordal_axis", { 'INPUT':r'D:\OneDrive\RNCan\Post_Traitement\Test.gpkg|layername=Triangles',
+    msg = processing.run("script:chordal_axis", { 'INPUT':'/home/daneli/personnel/qgis/geo_file/chordal.gpkg|layername=chord1',
                                                   'CORRECTION':True,
-                                                  'OUTPUT':r'C:\Users\berge\PycharmProjects\qgis_geo_sim\road_skeleton_out12333.gpkg'} )
+                                                  'OUTPUT':'/home/daneli/personnel/qgis/geo_file/chordal_out1.gpkg'} )
 except Exception:
     import traceback
     traceback.print_exc()

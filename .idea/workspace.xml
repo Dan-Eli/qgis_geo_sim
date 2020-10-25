@@ -20,7 +20,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="319571a1-2cab-4697-99a9-761106cc0c94" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/processing/scripts/lib_geosim.py" beforeDir="false" afterPath="$PROJECT_DIR$/processing/scripts/lib_geosim.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/qgis_geo_sim.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/qgis_geo_sim.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/runner_chordal_axis.py" beforeDir="false" afterPath="$PROJECT_DIR$/runner_chordal_axis.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbology-style.db" beforeDir="false" afterPath="$PROJECT_DIR$/symbology-style.db" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,7 +48,7 @@
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../../../Program Files/QGIS 3.14/apps/Python37/lib/site-packages/shapely/DLLs/geos_c.dll" />
+    <property name="last_opened_file_path" value="$USER_HOME$/.local/share/QGIS/QGIS3/profiles/default/python" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="PyConsoleOptionsProvider">
@@ -232,57 +236,48 @@
       <screen x="-1920" y="0" width="1920" height="1040" />
     </state>
     <state width="1357" height="466" key="DebuggerActiveHint/0.0.1920.1040/-1920.0.1920.1040@-1920.0.1920.1040" timestamp="1598493662176" />
-    <state width="1357" height="466" key="DebuggerActiveHint/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1594395695145" />
-    <state x="-1183" y="276" key="FileChooserDialogImpl" timestamp="1597977082502">
-      <screen x="-1920" y="0" width="1920" height="1040" />
+    <state x="737" y="294" width="424" height="491" key="FileChooserDialogImpl" timestamp="1603593946184">
+      <screen x="0" y="27" width="1920" height="1007" />
     </state>
     <state x="-1183" y="276" key="FileChooserDialogImpl/0.0.1920.1040/-1920.0.1920.1040@-1920.0.1920.1040" timestamp="1597977082502" />
-    <state x="737" y="276" key="FileChooserDialogImpl/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1591563609502" />
+    <state x="737" y="294" width="424" height="491" key="FileChooserDialogImpl/0.27.1920.1007/1920.0.1920.1080@0.27.1920.1007" timestamp="1603593946184" />
     <state width="1899" height="295" key="GridCell.Tab.0.bottom" timestamp="1598498780379">
       <screen x="-1920" y="0" width="1920" height="1040" />
     </state>
     <state width="1899" height="295" key="GridCell.Tab.0.bottom/0.0.1920.1040/-1920.0.1920.1040@-1920.0.1920.1040" timestamp="1598498780379" />
-    <state width="1899" height="212" key="GridCell.Tab.0.bottom/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1594570973340" />
     <state width="1899" height="295" key="GridCell.Tab.0.center" timestamp="1598498780379">
       <screen x="-1920" y="0" width="1920" height="1040" />
     </state>
     <state width="1899" height="295" key="GridCell.Tab.0.center/0.0.1920.1040/-1920.0.1920.1040@-1920.0.1920.1040" timestamp="1598498780379" />
-    <state width="1899" height="212" key="GridCell.Tab.0.center/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1594570973340" />
     <state width="1899" height="295" key="GridCell.Tab.0.left" timestamp="1598498780379">
       <screen x="-1920" y="0" width="1920" height="1040" />
     </state>
     <state width="1899" height="295" key="GridCell.Tab.0.left/0.0.1920.1040/-1920.0.1920.1040@-1920.0.1920.1040" timestamp="1598498780379" />
-    <state width="1899" height="212" key="GridCell.Tab.0.left/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1594570973340" />
     <state width="1899" height="295" key="GridCell.Tab.0.right" timestamp="1598498780379">
       <screen x="-1920" y="0" width="1920" height="1040" />
     </state>
     <state width="1899" height="295" key="GridCell.Tab.0.right/0.0.1920.1040/-1920.0.1920.1040@-1920.0.1920.1040" timestamp="1598498780379" />
-    <state width="1899" height="212" key="GridCell.Tab.0.right/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1594570973340" />
     <state width="1899" height="208" key="GridCell.Tab.1.bottom" timestamp="1598495946845">
       <screen x="-1920" y="0" width="1920" height="1040" />
     </state>
     <state width="1899" height="208" key="GridCell.Tab.1.bottom/0.0.1920.1040/-1920.0.1920.1040@-1920.0.1920.1040" timestamp="1598495946845" />
-    <state width="1899" height="212" key="GridCell.Tab.1.bottom/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1594570973341" />
     <state width="1899" height="208" key="GridCell.Tab.1.center" timestamp="1598495946845">
       <screen x="-1920" y="0" width="1920" height="1040" />
     </state>
     <state width="1899" height="208" key="GridCell.Tab.1.center/0.0.1920.1040/-1920.0.1920.1040@-1920.0.1920.1040" timestamp="1598495946845" />
-    <state width="1899" height="212" key="GridCell.Tab.1.center/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1594570973341" />
     <state width="1899" height="208" key="GridCell.Tab.1.left" timestamp="1598495946845">
       <screen x="-1920" y="0" width="1920" height="1040" />
     </state>
     <state width="1899" height="208" key="GridCell.Tab.1.left/0.0.1920.1040/-1920.0.1920.1040@-1920.0.1920.1040" timestamp="1598495946845" />
-    <state width="1899" height="212" key="GridCell.Tab.1.left/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1594570973340" />
     <state width="1899" height="208" key="GridCell.Tab.1.right" timestamp="1598495946845">
       <screen x="-1920" y="0" width="1920" height="1040" />
     </state>
     <state width="1899" height="208" key="GridCell.Tab.1.right/0.0.1920.1040/-1920.0.1920.1040@-1920.0.1920.1040" timestamp="1598495946845" />
-    <state width="1899" height="212" key="GridCell.Tab.1.right/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1594570973341" />
-    <state x="-1459" y="165" key="SettingsEditor" timestamp="1597977410321">
-      <screen x="-1920" y="0" width="1920" height="1040" />
+    <state x="461" y="187" width="1022" height="737" key="SettingsEditor" timestamp="1603593960106">
+      <screen x="0" y="27" width="1920" height="1007" />
     </state>
     <state x="-1459" y="165" key="SettingsEditor/0.0.1920.1040/-1920.0.1920.1040@-1920.0.1920.1040" timestamp="1597977410321" />
-    <state x="461" y="165" key="SettingsEditor/0.0.1920.1040/1920.0.1920.1040@0.0.1920.1040" timestamp="1591563616223" />
+    <state x="461" y="187" width="1022" height="737" key="SettingsEditor/0.27.1920.1007/1920.0.1920.1080@0.27.1920.1007" timestamp="1603593960106" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

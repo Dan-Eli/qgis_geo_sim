@@ -232,7 +232,6 @@ class Test(unittest.TestCase):
 
 
 
-
 # Supply path to qgis install location
 QgsApplication.setPrefixPath("/usr/bin/qgis", False)
 

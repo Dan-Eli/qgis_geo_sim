@@ -425,9 +425,10 @@ class Bend:
 
         self.i = i
         self.j = j
-        self.qgs_geom_bend = QgsPolygon(QgsLineString(qgs_points[i:j + 1]))
-        self.bend_area = self.qgs_geom_bend.area()
-        self.bend_perimeter = self.qgs_geom_bend.perimeter()
+        qgs_pol_bend = QgsPolygon(QgsLineString(qgs_points[i:j + 1]))
+        self.bend_area = qgs_pol_bend.area()
+        self.bend_perimeter = qgs_pol_bend.perimeter()
+        self.qgs_geom_bend = QgsGeometry(qgs_pol_bend.clone())
         self.adj_area = calculate_adj_area(self.bend_area, self.bend_perimeter)
         self.to_reduce = False
         self.qgs_geom_new_subline = None
@@ -659,14 +660,14 @@ def detect_bends(rb_geom):
     return
 
 
-def _rb_geom_to_reduce(last_nbr_bend_reduced, rb_geoms):
-    new_nbr_bend_reduced = sum(rb_geom.nbr_bend_reduced for rb_geom in rb_geoms)
-    if new_nbr_bend_reduced == last_nbr_bend_reduced:
-        bend_to_reduce = False
-    else:
-        bend_to_reduce = True
-
-    return bend_to_reduce
+#def is_bend_reduction_terminated(last_nbr_bend_reduced, rb_geoms):
+#    new_nbr_bend_reduced = sum(rb_geom.nbr_bend_reduced for rb_geom in rb_geoms)
+#    if new_nbr_bend_reduced == last_nbr_bend_reduced:
+#        bend_to_reduce = False
+#    else:
+#        bend_to_reduce = True
+#
+#    return bend_to_reduce
 
 
 def remove_rb_geoms_done(rb_geoms, rb_geoms_done):
@@ -753,42 +754,45 @@ def validate_spatial_constraints(validate_is_simple, ind, rb_geom, rb_collection
 
     check_constraints = True
     bend = rb_geom.bends[ind]
-    qgs_geom_new_subline = bend.get_new_subline(rb_geom)
-    qgs_geom_new_subline_trimmed = bend.get_new_subline_trimmed(rb_geom)
-    qgs_geom_engine_new_subline = QgsGeometry.createGeometryEngine(qgs_geom_new_subline.constGet())
-    #    qgs_geom_engine_new_subline.prepareGeometry()
-    #    qgs_geom_engine_new_subline_trimmed = QgsGeometry.createGeometryEngine(qgs_geom_new_subline_trimmed.constGet())
-    qgs_geom_line_string = rb_geom.qgs_geom
+    qgs_geom_line_string = rb_geom.qgs_geom 
 
     # First: check if the bend reduce line string is an OGC simple line
     # We test with a tiny smaller line to ease the testing and false positive error
     if validate_is_simple:
-        if qgs_geom_new_subline_trimmed.disjoint(qgs_geom_line_string):
+        qgs_geom_new_subline_trimmed = bend.get_new_subline_trimmed(rb_geom)
+        qgs_geom_new_sub_trim_engine = QgsGeometry.createGeometryEngine(qgs_geom_new_subline_trimmed.constGet())
+        if qgs_geom_new_sub_trim_engine.disjoint(qgs_geom_line_string.constGet()):
             # Everything is OK
             pass
         else:
             # The new sub line intersect the line itself. The result would create a non OGC simple line
             check_constraints = False
+            print (qgs_geom_new_sub_trim_engine.intersection(qgs_geom_line_string.constGet()))
 
     # Second: check that the new line does not intersect any other line or points
-        if check_constraints:
-            qgs_geom_engine_bend_area = QgsGeometry.createGeometryEngine(bend.qgs_geom_bend)
-            qgs_rectangle = bend.qgs_geom_bend.boundingBox()
-            qgs_geom_potentials = rb_collection.get_features(qgs_rectangle, [rb_geom.id])
-            for qgs_geom_potential in qgs_geom_potentials:
-                if qgs_geom_engine_new_subline.intersects(qgs_geom_potential.constGet()):
-                    # The bend area intersects with a point
-                    check_constraints = False
-                    break
+    if check_constraints:
+        qgs_rectangle = bend.qgs_geom_bend.boundingBox()
+        qgs_geom_potentials = rb_collection.get_features(qgs_rectangle, [rb_geom.id])
+        qgs_geom_new_subline = bend.get_new_subline(rb_geom)
+        qgs_geom_engine_new_subline = QgsGeometry.createGeometryEngine(qgs_geom_new_subline.constGet())
+        for qgs_geom_potential in qgs_geom_potentials:
+#            if not qgs_geom_new_subline.disjoint(qgs_geom_potential):
+            if qgs_geom_engine_new_subline.intersects(qgs_geom_potential.constGet()):
+                # The bend area intersects with a point
+                check_constraints = False
+                break
 
     # Third: check that inside the bend to reduce there is no feature completely inside it.  This would cause a
     # sidedness or relative position error
-        if check_constraints:
-            for qgs_geom_potential in qgs_geom_potentials:
-                if qgs_geom_engine_bend_area.contains(qgs_geom_potential.constGet()):
-                    # A feature is totally located inside
-                    check_constraints = False
-                    break
+    if check_constraints:
+#        qgs_geom_engine_bend_area = QgsGeometry.createGeometryEngine(bend.qgs_geom_bend)
+#        qgs_geom_bend = QgsGeometry(bend.qgs_geom_bend.clone())
+        for qgs_geom_potential in qgs_geom_potentials:
+#            if qgs_geom_bend_area.contains(qgs_geom_potential.constGet()):
+            if bend.qgs_geom_bend.contains(qgs_geom_potential):
+                # A feature is totally located inside
+                check_constraints = False
+                break
 
     return check_constraints
 
@@ -796,13 +800,15 @@ def validate_spatial_constraints(validate_is_simple, ind, rb_geom, rb_collection
 def process_bends(rb_geom, rb_collection):
 
     for pass_num in (0,1):
+        nbr_bend_reduced = 0
         if pass_num == 0:
             if rb_geom.qgs_geom.isSimple():
-                qgs_points_copy = rb_geom.qgs_geom.point()
+                qgs_points_copy = rb_geom.qgs_geom.constGet().points()
                 validate_is_simple = False
             else:
                 # The line is already not simple.  Should not happen but algothim managed this case
                 validate_is_simple = True
+                print("OGC non valide avant pass 0")
         else:
             # A second pass indicates a problem of line self intersecting (manage intersection of each bend reduction)
             validate_is_simple = True
@@ -814,6 +820,7 @@ def process_bends(rb_geom, rb_collection):
                 spatial_constraints = validate_spatial_constraints(validate_is_simple, ind, rb_geom, rb_collection)
                 if spatial_constraints:
                     bend.reduce(rb_geom)
+                    nbr_bend_reduced += 1
 
         if pass_num == 0:
             # Validate for line self intersection
@@ -822,38 +829,43 @@ def process_bends(rb_geom, rb_collection):
                 break
             else:
                 # Undo the edit and recreate the original QgsLineString
-                rb_geom.qgs_geom = QgsGeometry(QgsLineString(qgs_points_copy))
+                qgs_line_string = QgsLineString(qgs_points_copy)
+                rb_geom.qgs_geom = QgsGeometry(qgs_line_string.clone())
+                print("OGC non valide apres pass 0")
         else:
             # Nothing to validate in a second pass
             pass
 
-    return
+    return nbr_bend_reduced
 
 
 
 def _manage_reduce_bend(rb_geoms, rb_collection, rb_results, diameter_tol, feedback):
+
     rb_geoms_done = []
     nbr_pass = 0
-    bend_to_reduce = True
+    previous_pass_nbr_bends = -1
+    current_pass_nbr_bends = 0
     nbr_geoms = 100.0 / len(rb_geoms) if len(rb_geoms) >= 1 else 0
-    while bend_to_reduce:
-        remove_rb_geoms_done(rb_geoms, rb_geoms_done)  # Remove item to accelerate process
+    while previous_pass_nbr_bends != current_pass_nbr_bends:
+        remove_rb_geoms_done(rb_geoms, rb_geoms_done)  # Remove feature done to accelerate process
         # set the progress bar
         if feedback is not None:
             if len(rb_geoms_done) == 0:
                 feedback.setProgress(1)
             else:
                 feedback.setProgress(int(len(rb_geoms_done) * nbr_geoms))
-        last_nbr_bend_reduced = sum(rb_geom.nbr_bend_reduced for rb_geom in rb_geoms)
+        previous_pass_nbr_bends = current_pass_nbr_bends
+        current_pass_nbr_bends = 0
         for rb_geom in rb_geoms:
             detect_bends(rb_geom)
             if nbr_pass == 0:
                 # Edit the start/end point for closed QgsLineString
                 rb_geom.edit_closed_line(diameter_tol)
             flag_bend_to_reduce(rb_geom, diameter_tol)
-            process_bends(rb_geom, rb_collection)
+            current_pass_nbr_bends += process_bends(rb_geom, rb_collection)
         # Check if all bend are processed
-        bend_to_reduce = _rb_geom_to_reduce(last_nbr_bend_reduced, rb_geoms)
+#        is_terminated = is_bend_reduction_terminated(last_nbr_bend_reduced, rb_geoms)
         nbr_pass += 1
 
     # Reset the rb_geoms list

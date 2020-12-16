@@ -123,8 +123,8 @@ def reduce_bends(qgs_in_features, diameter_tol, feedback=None, flag_del_outer=Fa
     s = io.StringIO()
     sortby = SortKey.CUMULATIVE
     ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-#    ps.print_stats()
-#    print(s.getvalue())
+    ps.print_stats()
+    print(s.getvalue())
 
     return rb_results
 
@@ -617,16 +617,12 @@ def validate_spatial_constraints(validate_is_simple, ind, rb_geom, rb_collection
 
     check_constraints = True
     bend = rb_geom.bends[ind]
-    qgs_geom_new_subline = bend.get_new_subline(rb_geom)
-    qgs_geom_new_subline_trimmed = bend.get_new_subline_trimmed(rb_geom)
-    qgs_geom_engine_new_subline = QgsGeometry.createGeometryEngine(qgs_geom_new_subline.constGet())
-    #    qgs_geom_engine_new_subline.prepareGeometry()
-    #    qgs_geom_engine_new_subline_trimmed = QgsGeometry.createGeometryEngine(qgs_geom_new_subline_trimmed.constGet())
     qgs_geom_line_string = rb_geom.qgs_geom
 
     # First: check if the bend reduce line string is an OGC simple line
     # We test with a tiny smaller line to ease the testing and false positive error
     if validate_is_simple:
+        qgs_geom_new_subline_trimmed = bend.get_new_subline_trimmed(rb_geom)
         if qgs_geom_new_subline_trimmed.disjoint(qgs_geom_line_string):
             # Everything is OK
             pass
@@ -636,9 +632,10 @@ def validate_spatial_constraints(validate_is_simple, ind, rb_geom, rb_collection
 
     # Second: check that the new line does not intersect any other line or points
     if check_constraints:
-        qgs_geom_engine_bend_area = QgsGeometry.createGeometryEngine(bend.qgs_geom_bend)
         qgs_rectangle = bend.qgs_geom_bend.boundingBox()
         qgs_geom_potentials = rb_collection.get_features(qgs_rectangle, [rb_geom.id])
+        qgs_geom_new_subline = bend.get_new_subline(rb_geom)
+        qgs_geom_engine_new_subline = QgsGeometry.createGeometryEngine(qgs_geom_new_subline.constGet())
         for qgs_geom_potential in qgs_geom_potentials:
             if qgs_geom_engine_new_subline.intersects(qgs_geom_potential.constGet()):
                 # The bend area intersects with a point
@@ -648,6 +645,7 @@ def validate_spatial_constraints(validate_is_simple, ind, rb_geom, rb_collection
     # Third: check that inside the bend to reduce there is no feature completely inside it.  This would cause a
     # sidedness or relative position error
     if check_constraints:
+        qgs_geom_engine_bend_area = QgsGeometry.createGeometryEngine(bend.qgs_geom_bend)
         for qgs_geom_potential in qgs_geom_potentials:
             if qgs_geom_engine_bend_area.contains(qgs_geom_potential.constGet()):
                 # A feature is totally located inside

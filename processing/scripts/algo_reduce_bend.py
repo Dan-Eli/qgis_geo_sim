@@ -13,12 +13,10 @@
 from abc import ABC, abstractmethod
 import math
 from qgis.core import QgsFeature, QgsPoint, QgsPointXY, QgsLineString, QgsPolygon, QgsWkbTypes, QgsSpatialIndex, \
-    QgsGeometry, QgsGeometryUtils, QgsVertexId, QgsRectangle
+    QgsGeometry, QgsGeometryUtils, QgsRectangle
 
 # Define global constant
-GeoSim_NBR_PARTITION = 3
-GeoSim_DYNAMIC_X = None
-GeoSim_DYNAMIC_Y = None
+GeoSim_NBR_PARTITION = 100
 GeoSim_EPSILON_REL = None
 GeoSim_EPSILON_ABS = None
 GeoSim_CW = 0
@@ -87,10 +85,10 @@ def reduce_bends(qgs_in_features, diameter_tol, feedback=None, flag_del_outer=Fa
         List of reduces QgsFeatures
      """
 
-#    import cProfile, pstats, io
-#    from pstats import SortKey
-#    pr = cProfile.Profile()
-#    pr.enable()
+    import cProfile, pstats, io
+    from pstats import SortKey
+    pr = cProfile.Profile()
+    pr.enable()
 
     eps = Epsilon(qgs_in_features)
 
@@ -120,12 +118,12 @@ def reduce_bends(qgs_in_features, diameter_tol, feedback=None, flag_del_outer=Fa
 #    rb_results.nbr_bends_detected = sum([rb_geom.nbr_bend_detected for rb_geom in rb_geoms])
     rb_results.qgs_features_out = qgs_features_out
 
-#    pr.disable()
-#    s = io.StringIO()
-#    sortby = SortKey.CUMULATIVE
-#    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-#    ps.print_stats()
-#    print(s.getvalue())
+    pr.disable()
+    s = io.StringIO()
+    sortby = SortKey.CUMULATIVE
+    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+    ps.print_stats()
+    print(s.getvalue())
 
     return rb_results
 
@@ -295,9 +293,12 @@ class GeomLineSegment:
 
     def delete_line_segment(self, qgs_geom_id, qgs_pnt0, qgs_pnt1):
 
-        qgs_rectangle = QgsRectangle(QgsPointXY(qgs_pnt0), QgsPointXY(qgs_pnt1))
-        qgs_rectangle.grow(100*GeoSim_EPSILON_REL)
         spatial_index = self._dict_index[qgs_geom_id]
+#        qgs_rectangle = QgsRectangle(QgsPointXY(qgs_pnt0), QgsPointXY(qgs_pnt1))
+        qgs_mid_point = QgsGeometryUtils.midpoint(qgs_pnt0, qgs_pnt1)
+        qgs_rectangle = qgs_mid_point.boundingBox()
+        qgs_rectangle.grow(GeoSim_EPSILON_REL*100)
+#        qgs_rectangle.grow(100*GeoSim_EPSILON_REL)
         ids = spatial_index.intersects(qgs_rectangle)
         for id in ids:
             qgs_geom_line = spatial_index.geometry(id)  # Extract geometry from index
@@ -356,23 +357,38 @@ class RbCollection(object):
 
         return self._id_b_box
 
-    def _subdivide_b_box(self, qgs_geom, qgs_b_box, lst_b_box):
+    def _get_b_box_xy(self, qgs_b_box):
 
         x_min = qgs_b_box.xMinimum()
         y_min = qgs_b_box.yMinimum()
         x_max = qgs_b_box.xMaximum()
         y_max = qgs_b_box.yMaximum()
-        if x_max - x_min < self.min_cell_size and y_max - y_min < self.min_cell_size:
-            if abs(x_max-x_min) < GeoSim_EPSILON_REL or abs(y_max-y_min) < GeoSim_EPSILON_REL:
-                qgs_b_box.grow(GeoSim_EPSILON_REL*100)  # No bounding box should be 0 or near 0 in width or in height
+
+        return x_min, y_min, x_max, y_max
+
+    def _polygon_from_rectangle(self, qgs_b_box):
+
+        x_min, y_min, x_max, y_max = self._get_b_box_xy(qgs_b_box)
+        qgs_pol = QgsPolygon(QgsLineString((QgsPoint(x_min, y_min), QgsPoint(x_max, y_min),
+                                            QgsPoint(x_max, y_max), QgsPoint(x_min, y_max))))
+
+        return qgs_pol
+
+    def _subdivide_b_box(self, qgs_geom, qgs_b_box, lst_b_box):
+
+        if max(qgs_b_box.width(),qgs_b_box.height()) <= self.min_cell_size:
+            # No bounding box should be 0 or near 0 in width or in height
+            # Also avoid some side effects when bends are parallel to the boundind box
+            qgs_b_box.grow(GeoSim_EPSILON_REL*100)
             if qgs_geom.intersects(qgs_b_box):
+#                x_min, y_min, x_max, y_max = self._get_b_box_xy(qgs_b_box)
                 qgs_feature_b_box = QgsFeature(id=self._get_id_b_box())
-                qgs_geom_b_box = QgsPolygon(QgsLineString((QgsPoint(x_min,y_min), QgsPoint(x_max,y_min),
-                                                           QgsPoint(x_max,y_max), QgsPoint(x_min,y_max))))
+                qgs_geom_b_box = self._polygon_from_rectangle(qgs_b_box)
                 qgs_feature_b_box.setGeometry(qgs_geom_b_box)
                 lst_b_box += [qgs_feature_b_box]  # Keep that bounding box
         else:
             # Sub divide this bounding box
+            x_min, y_min, x_max, y_max = self._get_b_box_xy(qgs_b_box)
             x_mid = (x_min + x_max) / 2.
             y_mid = (y_min + y_max) / 2.
             if x_max-x_min < self.min_cell_size:
@@ -399,19 +415,35 @@ class RbCollection(object):
         return lst_b_box
 
 
+    def create_index_b_boxes(self, rb_geom_id, qgs_geom):
+
+        qgs_features_b_box = self._subdivide_b_box(qgs_geom, qgs_geom.boundingBox(), [])
+        b_box_ids = [qgs_feature_b_box.id() for qgs_feature_b_box in qgs_features_b_box]
+        for b_box_id in b_box_ids:
+            self._dict_geom_b_boxes[b_box_id] = rb_geom_id  # Keep link between b_box id and the rb_geom id
+
+        self._spatial_index.addFeatures(qgs_features_b_box)  # Add the bounding boxes into the index
+
+        return len(b_box_ids)
+
+
     def add_features(self, rb_geoms):
 
-        self.min_cell_size = GeoSim_DYNAMIC_XY/GeoSim_NBR_PARTITION
-
+        self.min_cell_size = GeoSim_MAP_RANGE/GeoSim_NBR_PARTITION
+        dummy = 0
         for rb_geom in rb_geoms:
-            qgs_features_b_box = self._subdivide_b_box(rb_geom.qgs_geom, rb_geom.qgs_geom.boundingBox(), [])
-            b_box_ids = [qgs_feature_b_box.id() for qgs_feature_b_box in qgs_features_b_box]
-            for b_box_id in b_box_ids:
-                self._dict_geom_b_boxes[b_box_id] = rb_geom.id  # Keep link between b_box id and the rb_geom id
+            dummy += self.create_index_b_boxes(rb_geom.id, rb_geom.qgs_geom)
+#            qgs_features_b_box = self._subdivide_b_box(rb_geom.qgs_geom, rb_geom.qgs_geom.boundingBox(), [])
+#            b_box_ids = [qgs_feature_b_box.id() for qgs_feature_b_box in qgs_features_b_box]
+#            for b_box_id in b_box_ids:
+#                dummy += len(b_box_ids)
+#                self._dict_geom_b_boxes[b_box_id] = rb_geom.id  # Keep link between b_box id and the rb_geom id
 
+#            self._spatial_index.addFeatures(qgs_features_b_box)  # Add the bounding boxes into the index
             self._dict_qgs_geom[rb_geom.id] = rb_geom.qgs_geom  # Keep a reference to the qgs_geom
-            self._spatial_index.addFeatures(qgs_features_b_box)
-            self._geom_line_segment.add_geom(rb_geom)
+            self._geom_line_segment.add_geom(rb_geom)  #  Create the line segment index for the geometry
+
+        print ("Nbr bbox: ", dummy)
 
         return
 
@@ -444,17 +476,20 @@ class RbCollection(object):
 
         # Check that the new line segment added is completely covered by the bounding boxes of the geometry
         qgs_rectangle = QgsRectangle(QgsPointXY(qgs_pnt_0), QgsPointXY(qgs_pnt_1))
+        qgs_geom_line_string = QgsGeometry(QgsLineString(qgs_pnt_0, qgs_pnt_1))
         b_box_ids = self._spatial_index.intersects(qgs_rectangle)
         for b_box_id in b_box_ids:
             if self._dict_geom_b_boxes[b_box_id] == rb_geom.id:
                 qgs_pol = self._spatial_index.geometry(id=b_box_id)
-                if qgs_pol.contains(QgsGeometry(QgsLineString(qgs_pnt_0, qgs_pnt_1))):
+                if qgs_geom_line_string.within(qgs_pol):
                     line_segment_covered = True
                     break
                 else:
                     line_segment_covered = False
         if (not line_segment_covered):
-            print("need to add the line segment bounding box in the spatial index")
+            self.create_index_b_boxes(rb_geom.id, qgs_geom_line_string)
+
+#            print("need to add the line segment bounding box in the spatial index")
 
         # Now that the line segment spatial structure is updated let's delete the vertex
         for v_id_to_del in reversed(v_ids_to_del):
@@ -518,10 +553,10 @@ class Bend:
 
         self.i = i
         self.j = j
-        qgs_pol_bend = QgsPolygon(QgsLineString(qgs_points[i:j + 1]))
-        self.bend_area = qgs_pol_bend.area()
-        self.bend_perimeter = qgs_pol_bend.perimeter()
-        self.qgs_geom_bend = QgsGeometry(qgs_pol_bend.clone())
+        self.qgs_geom_bend = QgsGeometry(QgsPolygon(QgsLineString(qgs_points[i:j + 1])))
+        self.bend_area = self.qgs_geom_bend.area()
+        self.bend_perimeter = self.qgs_geom_bend.length()
+###        self.qgs_geom_bend = QgsGeometry(qgs_pol_bend.clone())
         self.adj_area = calculate_adj_area(self.bend_area, self.bend_perimeter)
         self.to_reduce = False
         self.qgs_geom_new_subline = None
@@ -590,18 +625,18 @@ class Epsilon():
         for feature in features:
             b_box.combineExtentWith(feature.geometry().boundingBox())
 
-        global GeoSim_DYNAMIC_XY
         delta_x = abs(b_box.xMinimum()) + abs(b_box.xMaximum())
         delta_y = abs(b_box.yMinimum()) + abs(b_box.yMaximum())
-        GeoSim_DYNAMIC_XY = max(delta_x, delta_y)
-        log_loss = int(math.log(GeoSim_DYNAMIC_XY, 10)+1)
-        max_digit = 15
-        security = 100
+        dynamic_xy = max(delta_x, delta_y)
+        log_loss = int(math.log(dynamic_xy, 10)+1)
+        max_digit = 15  # Number of significative digits for real number
+        security = 2
         abs_digit = max_digit  # Number of significative number in real*8
-        rel_digit = max_digit - log_loss
-        global GeoSim_EPSILON_REL, GeoSim_EPSILON_ABS
-        GeoSim_EPSILON_REL = (1. / (10**(abs_digit))) * security
-        GeoSim_EPSILON_ABS = 1. / (10**(rel_digit))  * security
+        rel_digit = max_digit - log_loss - security
+        global GeoSim_EPSILON_REL, GeoSim_EPSILON_ABS, GeoSim_MAP_RANGE
+        GeoSim_EPSILON_REL = (1. / (10**(rel_digit)))
+        GeoSim_EPSILON_ABS = 1. / (10**(abs_digit))
+        GeoSim_MAP_RANGE = max(b_box.width(), b_box.height())
 
         return
 
@@ -892,6 +927,7 @@ def flag_bend_to_reduce(rb_geom, diameter_tol):
 
 def validate_spatial_constraints(ind, rb_geom, rb_collection):
 
+#    return True
     check_constraints = True
     bend = rb_geom.bends[ind]
 #    qgs_geom_line_string = rb_geom.qgs_geom
@@ -900,10 +936,11 @@ def validate_spatial_constraints(ind, rb_geom, rb_collection):
     # We test with a tiny smaller line to ease the testing and false positive error
     if check_constraints:
         qgs_geom_new_subline_trimmed = bend.get_new_subline_trimmed(rb_geom)
-        qgs_geom_new_sub_trim_engine = QgsGeometry.createGeometryEngine(qgs_geom_new_subline_trimmed.constGet())
+#        qgs_geom_new_sub_trim_engine = QgsGeometry.createGeometryEngine(qgs_geom_new_subline_trimmed.constGet())
         qgs_geom_potentials = rb_collection.get_line_segments(rb_geom.id, qgs_geom_new_subline_trimmed.boundingBox())
         for qgs_geom_potential in qgs_geom_potentials:
-            if qgs_geom_new_sub_trim_engine.disjoint(qgs_geom_potential.constGet()):
+            if qgs_geom_new_subline_trimmed.disjoint(qgs_geom_potential):
+#            if not qgs_geom_new_sub_trim_engine.disjoint(qgs_geom_potential.constGet()):
                 # Everything is OK
                 pass
             else:
@@ -915,11 +952,12 @@ def validate_spatial_constraints(ind, rb_geom, rb_collection):
     if check_constraints:
         qgs_rectangle = bend.qgs_geom_bend.boundingBox()
         qgs_geom_new_subline = bend.get_new_subline(rb_geom)
-        qgs_geom_engine_new_subline = QgsGeometry.createGeometryEngine(qgs_geom_new_subline.constGet())
+#        qgs_geom_engine_new_subline = QgsGeometry.createGeometryEngine(qgs_geom_new_subline.constGet())
         qgs_geom_potentials = rb_collection.get_features(qgs_rectangle, [rb_geom.id])
         for qgs_geom_potential in qgs_geom_potentials:
+            if not qgs_geom_potential.disjoint(qgs_geom_new_subline):
 #            if not qgs_geom_new_subline.disjoint(qgs_geom_potential):
-            if not qgs_geom_engine_new_subline.disjoint(qgs_geom_potential.constGet()):
+#            if not qgs_geom_engine_new_subline.disjoint(qgs_geom_potential.constGet()):
                 # The bend area intersects with a point
                 check_constraints = False
                 break

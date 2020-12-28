@@ -1,12 +1,12 @@
 #Remaining modifications:
-#  - attribute for isClosed instead off calling each time isClosed()
 #  - put comment in the code
 #  - Manage case where a closed line string is of the same orientation except the start/end which is different
 #  - Add some comprehension list instead of for loop
-#  - edit line with a smooth line instead of a stragth line
+#  - edit line with a smooth line instead of a straight line
 #  - reorient the bend solely on the second pass as it will mobe start/end probably on a greater bend
 #  - in the bend flagging process prioritize the bend that goes outside the polygon first (for polygon)
 #  - edit closed line in comments
+#  - put some code to correct J-Bend
 #  - ajouter une class Reduce et placer la majorité des routines orphelines
 #  - Test reduce_bend performance with the profiler
 
@@ -930,7 +930,9 @@ def flag_bend_to_reduce(rb_geom, diameter_tol):
         del rb_geom.bends[0]  # Remove the first bend
         del rb_geom.bends[-1]  # Remove the last bend
 
-    lst_bends = priorize_bend_reduction(rb_geom, min_adj_area)
+#    lst_bends = priorize_bend_reduction(rb_geom, min_adj_area)
+    lst_bends = [(bend.adj_area, i) for i, bend in enumerate(rb_geom.bends) if bend.area < min_adj_area]
+    lst_bends.sort(key=lambda item: item[0])
 
     start = 0
     end = len(rb_geom.bends) - 1
@@ -958,13 +960,16 @@ def flag_bend_to_reduce(rb_geom, diameter_tol):
             # Over minimum adjusted area
             break
 
-    if len(lst_bends) == 0 or lst_bends[0][0] >= min_adj_area:
+    if len(rb_geom.bends) == 0:
+        # No more bends to reduce
         rb_geom.is_simplest = True
+
+#    if len(lst_bends) == 0 or lst_bends[0][0] >= min_adj_area:
+#        rb_geom.is_simplest = True
 
 
 def validate_spatial_constraints(ind, rb_geom, rb_collection):
 
-#    return True
     check_constraints = True
     bend = rb_geom.bends[ind]
 #    qgs_geom_line_string = rb_geom.qgs_geom
@@ -1068,7 +1073,7 @@ def _manage_reduce_bend(rb_geoms, rb_collection, rb_results, diameter_tol, feedb
     previous_pass_nbr_bends = -1
     current_pass_nbr_bends = 0
     nbr_geoms = 100.0 / len(rb_geoms) if len(rb_geoms) >= 1 else 0
-    while previous_pass_nbr_bends != current_pass_nbr_bends:
+    while nbr_pass < 6 or previous_pass_nbr_bends != current_pass_nbr_bends:
         remove_rb_geoms_done(rb_geoms, rb_geoms_done)  # Remove feature done to accelerate process
         # set the progress bar
         if feedback is not None:
@@ -1078,6 +1083,12 @@ def _manage_reduce_bend(rb_geoms, rb_collection, rb_results, diameter_tol, feedb
                 feedback.setProgress(int(len(rb_geoms_done) * nbr_geoms))
         previous_pass_nbr_bends = current_pass_nbr_bends
         current_pass_nbr_bends = 0
+        if nbr_pass <= 1:
+            current_diameter_tol = diameter_tol * .15
+        elif nbr_pass <= 3:
+            current_diameter_tol = diameter_tol * .5
+        else:
+            current_diameter_tol = diameter_tol
         for rb_geom in rb_geoms:
             delete_co_linear(rb_collection, rb_geom)
             nbr_bend_detected = detect_bends(rb_geom)
@@ -1086,10 +1097,11 @@ def _manage_reduce_bend(rb_geoms, rb_collection, rb_results, diameter_tol, feedb
 #            if nbr_pass == 0:
 #                # Edit the start/end point for closed QgsLineString
 #                rb_geom.edit_closed_line(diameter_tol)
-            flag_bend_to_reduce(rb_geom, diameter_tol)
+            flag_bend_to_reduce(rb_geom, current_diameter_tol)
             current_pass_nbr_bends += process_bends(rb_collection, rb_results, rb_geom)
         # Check if all bend are processed
 #        is_terminated = is_bend_reduction_terminated(last_nbr_bend_reduced, rb_geoms)
+        print ("Passe: ", nbr_pass, "   nbr bends: ", current_pass_nbr_bends)
         nbr_pass += 1
 
     # Reset the rb_geoms list

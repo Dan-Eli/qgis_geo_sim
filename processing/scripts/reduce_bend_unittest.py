@@ -4,8 +4,8 @@ Unit test for reduce_bend algorithm
 
 import unittest
 from qgis.core import QgsApplication
-from algo_reduce_bend import reduce_bends
-from qgis.core import QgsPoint, QgsLineString, QgsPolygon, QgsFeature, QgsGeometry
+from algo_reduce_bend import ReduceBend
+from qgis.core import QgsPoint, QgsLineString, QgsPolygon, QgsFeature, QgsGeometry, QgsProcessingFeedback
 
 def qgs_line_string_to_xy(qgs_line_string):
 
@@ -33,12 +33,15 @@ def build_and_launch(title, qgs_geoms, diameter_tol, del_pol=False, del_hole=Fal
 
     print(title)
     qgs_features = []
+    feedback = QgsProcessingFeedback()
     for qgs_geom in qgs_geoms:
         qgs_feature = QgsFeature()
         qgs_feature.setGeometry(qgs_geom)
         qgs_features.append(qgs_feature)
 
-    rb_results = reduce_bends(qgs_features, diameter_tol, None, del_pol, del_hole)
+    rb_results = ReduceBend.reduce(qgs_features, diameter_tol, 100, feedback, del_pol, del_hole, True)
+    log = feedback.textLog()
+    print (log)
     qgs_features_out = rb_results.qgs_features_out
 
     qgs_geoms_out = []
@@ -88,6 +91,7 @@ class Test(unittest.TestCase):
     Class allowing to test the algorithm
     """
 
+    """
     def test_case00(self):
         f = open("/home/daneli/test.txt", "r")
         wkt = f.read()
@@ -104,7 +108,7 @@ class Test(unittest.TestCase):
 #        val2 = qgs_geom2.equals(qgs_feature_out[2])
         self.assertTrue (True, title)
 
-    """"
+    """
     def test_case00(self):
         title = "Test 00: 1 point and 3 line string to validate bounding box sub dividing"
         qgs_geom0 = create_point((0,0))
@@ -163,8 +167,8 @@ class Test(unittest.TestCase):
     def test_case02(self):
 
         title = "Test 02: Co-linear and alomost co-linear point"
-        in_geom0 = create_line([(0, 0), (20, 0), (25.0000000001, 0.0000000001), (30, 0)])
-        in_geom1 = create_line([(0, 10), (30, 10), (35.000000001, 10.00000000001), (40, 10)])
+        in_geom0 = create_line([(0, 0), (20, 0), (25.000000000000001, 0.0000000000001), (30, 0)])
+        in_geom1 = create_line([(0, 10), (30, 10), (35.000000000001, 10.00000000000001), (40, 10)])
         in_geom2 = create_point((0, 100))
         out_geom0 = create_line([(0, 0), (30, 0)])
         out_geom1 = create_line([(0, 10), (40, 10)])
@@ -205,7 +209,7 @@ class Test(unittest.TestCase):
         qgs_geom0 = create_polygon(coord, [])
         qgs_geom1 = create_line([(10.1, 20.5), (10.2, 20.6), (10.3, 20.5)])
         qgs_feature_out = build_and_launch(title, [qgs_geom0, qgs_geom1], 3)
-        coord = [(0,0), (0,20), (10,20), (10,21), (11,21), (11,20), (20,20), (20,0), (0,0)]
+        coord = [(20,20), (20,0), (0,0), (0,20), (10,20), (10,21), (11,21), (11,20), (20,20)]
         out_geom0 = create_polygon(coord, [])
         out_geom1 = create_line([(10.1, 20.5), (10.3, 20.5)])
         val0 = out_geom0.equals(qgs_feature_out[0])
@@ -218,7 +222,7 @@ class Test(unittest.TestCase):
         qgs_geom0 = create_polygon(coord, [])
         qgs_geom1 = create_point((10.1,20.5))
         qgs_feature_out = build_and_launch(title, [qgs_geom0, qgs_geom1], 3)
-        coord = [(0,0), (0,20), (10,20), (10,21), (11,21), (11,20), (20,20), (20,0), (0,0)]
+        coord = [(20,20), (20,0), (0,0), (0,20), (10,20), (10,21), (11,21), (11,20), (20,20)]
         out_geom0 = create_polygon(coord, [])
         val0 = out_geom0.equals(qgs_feature_out[0])
         val1 = qgs_geom1.equals(qgs_feature_out[1])
@@ -269,7 +273,17 @@ class Test(unittest.TestCase):
         qgs_geom0 = create_polygon(coord0, [coord1])
         qgs_feature_out = build_and_launch(title, [qgs_geom0], 3, del_pol=True, del_hole=True)
         self.assertEqual(len(qgs_feature_out), 0, title)
-    """
+
+    def test_case12(self):
+        title = "Test 12: A line with a bend where the length of the base is zero"
+        coord0 = [(0, 0), (50, 0), (49, 1), (51, 1), (50, 0), (100, 0)]
+        qgs_geom0 = create_line(coord0)
+        qgs_feature_out = build_and_launch(title, [qgs_geom0], 3, del_pol=True, del_hole=True)
+        coord0 = [(0, 0), (100, 0)]
+        qgs_geom0 = create_line(coord0)
+        val0 = qgs_geom0.equals(qgs_feature_out[0])
+        self.assertTrue(val0, title)
+
 
 # Supply path to qgis install location
 QgsApplication.setPrefixPath("/usr/bin/qgis", False)

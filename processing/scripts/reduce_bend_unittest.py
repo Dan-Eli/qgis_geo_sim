@@ -21,11 +21,11 @@ def qgs_line_string_to_xy(qgs_line_string):
 def plot_lines(qgs_line_string, qgs_new_line):
 
     line0_lst_x, line0_lst_y = qgs_line_string_to_xy(qgs_line_string)
-    line1_lst_x, line1_lst_y = qgs_line_string_to_xy(qgs_new_line)
+#    line1_lst_x, line1_lst_y = qgs_line_string_to_xy(qgs_new_line)
 
     import matplotlib.pyplot as plt
     plt.plot(line0_lst_x, line0_lst_y, 'b')
-    plt.plot(line1_lst_x, line1_lst_y, 'r')
+#    plt.plot(line1_lst_x, line1_lst_y, 'r')
     plt.show()
 
 
@@ -85,6 +85,12 @@ def create_polygon(outer, inners):
 
     return qgs_geom
 
+def coords_shift(pos, coords):
+
+    new_coords = coords[pos:] + coords[0:pos-1] + [coords[pos]]
+
+    return new_coords
+
 
 class Test(unittest.TestCase):
     """
@@ -109,7 +115,67 @@ class Test(unittest.TestCase):
         self.assertTrue (True, title)
 
     """
+
+    def test_case000_2(self):
+        title = "Test 00: Polygon with start/end point colinear"
+        qgs_geom0 = create_polygon([(0,10), (5,10), (10,10), (10,0), (0,0), (0,10)], [])
+        qgs_feature_out = build_and_launch(title,[qgs_geom0], 300)
+        out_qgs_geom0 = create_polygon([(0,10), (10,10), (10,0), (0,0), (0,10)], [])
+        val0 = out_qgs_geom0.equals(qgs_feature_out[0])
+        self.assertTrue (val0, title)
+
+    def test_case000_1(self):
+        title = "Test 00: Polygon with one bend the first/end vertice located on the bend to reduce"
+        qgs_geom0 = create_polygon([(5,10), (5,11), (6,11), (6,10), (10,10), (10,0), (0,0), (0,10), (5,10)], [])
+        qgs_feature_out = build_and_launch(title,[qgs_geom0], 3)
+        out_qgs_geom0 = create_polygon([(0,10), (10,10), (5,0), (0,10)], [])
+        val0 = out_qgs_geom0.equals(qgs_feature_out[0])
+        self.assertTrue(val0, title)
+
+    def test_case000(self):
+        title = "Test 00: Square polygon with one bend"
+        qgs_geom0 = create_polygon([(0,10), (5,9), (10,10), (10,0), (0,0), (0,10)], [])
+        qgs_feature_out = build_and_launch(title,[qgs_geom0], 3000)
+        out_qgs_geom0 = create_polygon([(0,10), (10,10), (10,0), (0,0), (0,10)], [])
+        val0 = out_qgs_geom0.equals(qgs_feature_out[0])
+        self.assertTrue (val0, title)
+
+    def test_case0000(self):
+        title = "Test 00: triangle polygon with one bend"
+        qgs_geom0 = create_polygon([(0,10), (5,9), (10,10), (5,0), (0,10)], [])
+        qgs_feature_out = build_and_launch(title,[qgs_geom0], 3000)
+        out_qgs_geom0 = create_polygon([(0,10), (10,10), (5,0), (0,10)], [])
+        val0 = out_qgs_geom0.equals(qgs_feature_out[0])
+        self.assertTrue (val0, title)
+
     def test_case00(self):
+        title = "Test 00: A polygon with no bend.  A line with no bend"
+        qgs_geom0 = create_polygon([(0, 0), (10, 0), (10, 10), (0, 10), (0, 0)], [])
+        qgs_geom1 = create_line([(10, 0), (20, 0)])
+        qgs_feature_out = build_and_launch(title,[qgs_geom0, qgs_geom1], 3)
+        val0 = qgs_geom0.equals(qgs_feature_out[0])
+        val1 = qgs_geom1.equals(qgs_feature_out[1])
+        self.assertTrue (val0 and val1, title)
+
+    def test_case00_1(self):
+        title = "Test 00: 1 polygon with no bend to reduce"
+        coords0 = [(0, 0), (0, 5), (2.5,4), (5, 5), (5, 0), (0,0)]
+        coords1 = coords_shift(1, coords0)
+        qgs_geom0 = create_polygon(coords0, [])
+        qgs_feature_out = build_and_launch(title,[qgs_geom0], 3)
+        val0 = qgs_geom0.equals(qgs_feature_out[0])
+        self.assertTrue (val0 and val1 and val2, title)
+
+
+    def test_case00_1(self):
+        title = "Test 00: 1 point and 3 line string to validate bounding box sub dividing"
+        qgs_geom0 = create_line([(0, 0), (1, 1), (2,0)])
+        qgs_feature_out = build_and_launch(title,[qgs_geom0], 3)
+        out_qgs_geom0 = create_line([(0, 0), (2, 0)])
+        val0 = out_qgs_geom0.equals(qgs_feature_out[0])
+        self.assertTrue (val0, title)
+
+    def test_case00_2(self):
         title = "Test 00: 1 point and 3 line string to validate bounding box sub dividing"
         qgs_geom0 = create_point((0,0))
         qgs_geom1 = create_line([(0, 0), (100, 0)])
@@ -146,7 +212,7 @@ class Test(unittest.TestCase):
         title = "Test 01_2: Degenerated line"
         qgs_geom0 = create_line([(10, 10), (10, 20), (10,10)])
         qgs_feature_out = build_and_launch(title, [qgs_geom0], 3)
-        out_qgs_geom0 = create_line([(10, 10), (10,10)])
+        out_qgs_geom0 = create_line([(10, 10), (10,20), (10,10)])
         val0 = out_qgs_geom0.equals(qgs_feature_out[0])
         self.assertTrue (val0, title)
 
@@ -193,12 +259,13 @@ class Test(unittest.TestCase):
 
     def test_case04(self):
         title = "Test 04: Polygon with bend"
-        outer = [(0, 0), (0, 20), (10, 20), (10, 21), (11, 21), (11, 20), (20, 20), (20, 0), (10, -.1)]
+        outer = [(0, 0), (0, 20), (10, 20), (10, 21), (11, 21), (11, 20), (20, 20), (20, 0), (0, 0)]
         inner = [(5, 5), (5, 6), (6, 6), (6, 5)]
         in_geom0 = create_polygon(outer, [inner])
-        outer = [(0,0), (0,20), (20,20), (20,0), (10,-.1), (0,0)]
-        inner = [(5,5), (5,6), (6,6), (6,5), (5,5)]
-        qgs_feature_out = build_and_launch(title, [in_geom0], 3)
+        qgs_feature_out = build_and_launch(title, [in_geom0], 300)
+        print ("enlever les 300")
+        outer = [(0, 0), (0, 20), (20, 20), (20, 0), (0, 0)]
+        inner = [(5, 5), (5, 6), (6, 6), (6, 5), (5, 5)]
         out_geom0 = create_polygon(outer, [inner])
         val0 = out_geom0.equals(qgs_feature_out[0])
         self.assertTrue(val0, title)
@@ -209,7 +276,7 @@ class Test(unittest.TestCase):
         qgs_geom0 = create_polygon(coord, [])
         qgs_geom1 = create_line([(10.1, 20.5), (10.2, 20.6), (10.3, 20.5)])
         qgs_feature_out = build_and_launch(title, [qgs_geom0, qgs_geom1], 3)
-        coord = [(20,20), (20,0), (0,0), (0,20), (10,20), (10,21), (11,21), (11,20), (20,20)]
+        coord = [(0, 0), (0, 20), (10, 20), (10, 21), (11, 21), (11, 20), (20, 20), (20, 0)]
         out_geom0 = create_polygon(coord, [])
         out_geom1 = create_line([(10.1, 20.5), (10.3, 20.5)])
         val0 = out_geom0.equals(qgs_feature_out[0])
@@ -222,7 +289,7 @@ class Test(unittest.TestCase):
         qgs_geom0 = create_polygon(coord, [])
         qgs_geom1 = create_point((10.1,20.5))
         qgs_feature_out = build_and_launch(title, [qgs_geom0, qgs_geom1], 3)
-        coord = [(20,20), (20,0), (0,0), (0,20), (10,20), (10,21), (11,21), (11,20), (20,20)]
+        coord = [(0, 0), (0, 20), (10, 20), (10, 21), (11, 21), (11, 20), (20, 20), (20, 0)]
         out_geom0 = create_polygon(coord, [])
         val0 = out_geom0.equals(qgs_feature_out[0])
         val1 = qgs_geom1.equals(qgs_feature_out[1])

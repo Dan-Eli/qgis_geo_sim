@@ -128,7 +128,7 @@ class Test(unittest.TestCase):
         title = "Test 00: Polygon with one bend the first/end vertice located on the bend to reduce"
         qgs_geom0 = create_polygon([(5,10), (5,11), (6,11), (6,10), (10,10), (10,0), (0,0), (0,10), (5,10)], [])
         qgs_feature_out = build_and_launch(title,[qgs_geom0], 3)
-        out_qgs_geom0 = create_polygon([(0,10), (10,10), (5,0), (0,10)], [])
+        out_qgs_geom0 = create_polygon([(10,0), (0,0), (0,10), (10,10), (10,0)], [])
         val0 = out_qgs_geom0.equals(qgs_feature_out[0])
         self.assertTrue(val0, title)
 
@@ -136,7 +136,7 @@ class Test(unittest.TestCase):
         title = "Test 00: Square polygon with one bend"
         qgs_geom0 = create_polygon([(0,10), (5,9), (10,10), (10,0), (0,0), (0,10)], [])
         qgs_feature_out = build_and_launch(title,[qgs_geom0], 3000)
-        out_qgs_geom0 = create_polygon([(0,10), (10,10), (10,0), (0,0), (0,10)], [])
+        out_qgs_geom0 = create_polygon([(10,0), (0,0), (0,10), (10,10), (10,0)], [])
         val0 = out_qgs_geom0.equals(qgs_feature_out[0])
         self.assertTrue (val0, title)
 
@@ -144,7 +144,7 @@ class Test(unittest.TestCase):
         title = "Test 00: triangle polygon with one bend"
         qgs_geom0 = create_polygon([(0,10), (5,9), (10,10), (5,0), (0,10)], [])
         qgs_feature_out = build_and_launch(title,[qgs_geom0], 3000)
-        out_qgs_geom0 = create_polygon([(0,10), (10,10), (5,0), (0,10)], [])
+        out_qgs_geom0 = create_polygon([(10,10), (5,0), (0,10), (10,10)], [])
         val0 = out_qgs_geom0.equals(qgs_feature_out[0])
         self.assertTrue (val0, title)
 
@@ -264,7 +264,7 @@ class Test(unittest.TestCase):
         in_geom0 = create_polygon(outer, [inner])
         qgs_feature_out = build_and_launch(title, [in_geom0], 300)
         print ("enlever les 300")
-        outer = [(0, 0), (0, 20), (20, 20), (20, 0), (0, 0)]
+        outer = [(20, 20), (20, 0), (0, 0), (0,20), (20,20)]
         inner = [(5, 5), (5, 6), (6, 6), (6, 5), (5, 5)]
         out_geom0 = create_polygon(outer, [inner])
         val0 = out_geom0.equals(qgs_feature_out[0])
@@ -276,7 +276,7 @@ class Test(unittest.TestCase):
         qgs_geom0 = create_polygon(coord, [])
         qgs_geom1 = create_line([(10.1, 20.5), (10.2, 20.6), (10.3, 20.5)])
         qgs_feature_out = build_and_launch(title, [qgs_geom0, qgs_geom1], 3)
-        coord = [(0, 0), (0, 20), (10, 20), (10, 21), (11, 21), (11, 20), (20, 20), (20, 0)]
+        coord = [(20, 20), (20, 0), (0, 0), (0, 20), (10, 20), (10, 21), (11, 21), (11, 20), (20,20)]
         out_geom0 = create_polygon(coord, [])
         out_geom1 = create_line([(10.1, 20.5), (10.3, 20.5)])
         val0 = out_geom0.equals(qgs_feature_out[0])
@@ -285,11 +285,11 @@ class Test(unittest.TestCase):
 
     def test_case06(self):
         title = "Test 06: Polygon with point in bend"
-        coord = [(0, 0), (0, 20), (10, 20), (10, 21), (11, 21), (11, 20), (20, 20), (20, 0)]
+        coord = [(0, 0), (0, 20), (10, 20), (10, 21), (11, 21), (11, 20), (20, 20), (20, 0), (0,0)]
         qgs_geom0 = create_polygon(coord, [])
         qgs_geom1 = create_point((10.1,20.5))
         qgs_feature_out = build_and_launch(title, [qgs_geom0, qgs_geom1], 3)
-        coord = [(0, 0), (0, 20), (10, 20), (10, 21), (11, 21), (11, 20), (20, 20), (20, 0)]
+        coord = [(20, 20), (20, 0), (0, 0), (0, 20), (10, 20), (10, 21), (11, 21), (11, 20), (20,20)]
         out_geom0 = create_polygon(coord, [])
         val0 = out_geom0.equals(qgs_feature_out[0])
         val1 = qgs_geom1.equals(qgs_feature_out[1])
@@ -309,7 +309,7 @@ class Test(unittest.TestCase):
         coord1 = [(10.1, 20.1), (10.1, 20.2), (10.2, 20.2), (10.2, 20.1), (10.1, 20.1)]
         qgs_geom0 = create_polygon(coord0, [coord1])
         qgs_feature_out = build_and_launch(title, [qgs_geom0], 3, del_pol=True, del_hole=True)
-        coord = [(0,0), (0,20), (20,20), (20,0), (0,0)]
+        coord = [(20,20), (20,0), (0,0), (0,20), (20,20)]
         out_geom0 = create_polygon(coord, [])
         val0 = out_geom0.equals(qgs_feature_out[0])
         self.assertTrue(val0, title)

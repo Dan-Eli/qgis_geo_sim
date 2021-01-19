@@ -4,190 +4,189 @@ General classes and utilities needed for GeoSim.
 
 import sys
 from math import atan, degrees, sqrt, acos, pi
-from shapely.geometry import Point, LineString, Polygon
-from shapely.ops import linemerge
-from shapely.ops import unary_union
+###from shapely.geometry import Point, LineString, Polygon
+#from shapely.ops import linemerge
+#from shapely.ops import unary_union
 from collections.abc import Iterable
-from collections import OrderedDict
-from shapely.strtree import STRtree
+#from collections import OrderedDict
+#from shapely.strtree import STRtree
 
 from qgis.core import QgsGeometry, QgsPoint, QgsLineString, QgsWkbTypes, QgsProcessingException, QgsSpatialIndex,\
                       QgsPolygon, QgsRectangle, QgsMultiLineString
 
 
-class LineStringSc(LineString):
-    """LineString specialization that allow LincestringSc to be included  in the SpatialContainer"""
+#class LineStringSc(LineString):
+#    """LineString specialization that allow LincestringSc to be included  in the SpatialContainer"""
+#
+#    def __init__(self, coords):
+#        """ Constructor for the LineStringSc
+#            Parameters
+#            ----------
+#            coords : tuple
+#                Tuple of x,y coordinate
+#            Returns
+#            -------
+#            None
+#        """
+#        super().__init__(coords)
+#        self._sc_id = None
+#        self._sc_scontainer = None
 
-    def __init__(self, coords):
-        """ Constructor for the LineStringSc
-            Parameters
-            ----------
-            coords : tuple
-                Tuple of x,y coordinate
-            Returns
-            -------
-            None
-        """
-        super().__init__(coords)
-        self._sc_id = None
-        self._sc_scontainer = None
+#    @property
+#    def coords(self):
+#        """ Return the coordinate of the line
+#        Parameters
+#        ----------
+#        None
+#        Returns
+#        -------
+#        Tuple
+#            List of x,y coordinate
+#        """
+#        return super().coords
 
-    @property
-    def coords(self):
-        """ Return the coordinate of the line
-        Parameters
-        ----------
-        None
-        Returns
-        -------
-        Tuple
-            List of x,y coordinate
-        """
-        return super().coords
-
-    @coords.setter
-    def coords(self, coords):
-        """Update the coordinate value anf the spatial container if there is a spatial container
-        Parameters
-        ----------
-        Coords : tuple
-            List of x,y coordinates
-        Returns
-        -------
-        None
-        """
-        LineString.coords.__set__(self, coords)
-
-        if self._sc_scontainer != None:  # Is the feature is a spatial container
-            # The coordinate has changed so update the bounding box in the spatial container
-            self._sc_scontainer.update_spatial_index(self)
-
-
-class PointSc(Point):
-    """Point specialization that allow PointSc features to be included  in the SpatialContainer"""
-
-    def __init__(self, coords):
-        """ Constructor of the PointSc class
-        Parameters
-        ----------
-        coords : tuple
-            x,y coordinates of the point
-        Returns
-        -------
-        None
-        """
-
-        super().__init__(coords)
-        self._sc_id = None
-        self._sc_scontainer = None
-
-    @property
-    def coords(self):
-        """ Return the coordinate of a line
-        Parameters
-        ----------
-        None
-        Returns
-        -------
-        Tuple
-            x,y coordinate of the point
-        """
-
-        return super().coords
-
-    @coords.setter
-    def coords (self, coords):
-        """Update the coordinate of the LineString and update the spatial container if the spatial container exists
-        Parameters
-        ----------
-        coords : tuple
-            x,y coordinates of the point
-        Returns
-        -------
-        None
-        """
-
-        Point.coords.__set__(self, coords)
-
-        if self._sc_scontainer is not None:  # Is the feature is a spatial container
-            # The coordinate has changed so update the bounding box in the spatial container
-            self._sc_container.update_bbox(self)
+#    @coords.setter
+#    def coords(self, coords):
+#        """Update the coordinate value anf the spatial container if there is a spatial container
+#        Parameters
+#        ----------
+#        Coords : tuple
+#            List of x,y coordinates
+#        Returns
+#        -------
+#        None
+#        """
+#        LineString.coords.__set__(self, coords)
+#
+#        if self._sc_scontainer != None:  # Is the feature is a spatial container
+#            # The coordinate has changed so update the bounding box in the spatial container
+#            self._sc_scontainer.update_spatial_index(self)
 
 
-class PolygonSc(Polygon):
-    """Polygon specialization to be included in the SpatialContainer"""
-
-    def __init__(self, exterior, interiors=None):
-        """Constructor of the PolygoncSc
-        Parameters
-        ----------
-        exterior : list
-            List of x,y coordinate forming a loop
-        interiors : list
-            List of loops
-        Returns
-        -------
-        None
-        """
-        super().__init__(exterior, interiors)
-        self._sc_id = None
-        self._sc_scontainer = None
-
-    @property
-    def exterior(self):
-        """Return the exterior description
-        Parameters
-        ----------
-        None
-        Returns
-        -------
-        list
-            List of x,y coordinate forming a loop
-        """
-        return super().exterior
-
-    @property
-    def interiors(self):
-        """Return the interior description
-        Parameters
-        ----------
-        None
-        Returns
-        -------
-        list
-            List of loops formint the interior
-        """
-
-        return super().interiors
-
-    @exterior.setter
-    def exterior(self, exterior):
-        """Cannot set the interior raise exception
-        Parameters
-        ----------
-        exterior : list
-            List of xy coordinate forming a loop
-        Returns
-        -------
-        Exception
-        """
-
-        raise GeoSimException("Cannot update the exterior coordinates of a polygon")
-
-    @interiors.setter
-    def interiors(self, interiors):
-        """Cannot set the exterior raise exception
-        Parameters
-        ----------
-        interiors : list
-            List of interiors forming loops
-        Returns
-        -------
-        Exception
-        """
-
-
-        raise GeoSimException("Cannot update the interior coordinates of a polygon")
+#class PointSc(Point):
+#    """Point specialization that allow PointSc features to be included  in the SpatialContainer"""
+#
+#    def __init__(self, coords):
+#        """ Constructor of the PointSc class
+#        Parameters
+#        ----------
+#        coords : tuple
+#            x,y coordinates of the point
+#        Returns
+#        -------
+#        None
+#        """
+#
+#        super().__init__(coords)
+#        self._sc_id = None
+#        self._sc_scontainer = None
+#
+#    @property
+#    def coords(self):
+#        """ Return the coordinate of a line
+#        Parameters
+#        ----------
+#        None
+#        Returns
+#        -------
+#        Tuple
+#            x,y coordinate of the point
+#        """
+#
+#        return super().coords
+#
+#    @coords.setter
+#    def coords (self, coords):
+#        """Update the coordinate of the LineString and update the spatial container if the spatial container exists
+#        Parameters
+#        ----------
+#        coords : tuple
+#            x,y coordinates of the point
+#        Returns
+#        -------
+#        None
+#        """
+#
+#        Point.coords.__set__(self, coords)
+#
+#        if self._sc_scontainer is not None:  # Is the feature is a spatial container
+#            # The coordinate has changed so update the bounding box in the spatial container
+#            self._sc_container.update_bbox(self)
+#
+#
+#class PolygonSc(Polygon):
+#    """Polygon specialization to be included in the SpatialContainer"""
+#
+#    def __init__(self, exterior, interiors=None):
+#        """Constructor of the PolygoncSc
+#        Parameters
+#        ----------
+#        exterior : list
+#            List of x,y coordinate forming a loop
+#        interiors : list
+#            List of loops
+#        Returns
+#        -------
+#        None
+#        """
+#        super().__init__(exterior, interiors)
+#        self._sc_id = None
+#        self._sc_scontainer = None
+#
+#    @property
+#    def exterior(self):
+#        """Return the exterior description
+#        Parameters
+#        ----------
+#        None
+#        Returns
+#        -------
+#        list
+#            List of x,y coordinate forming a loop
+#        """
+#        return super().exterior
+#
+#    @property
+#    def interiors(self):
+#        """Return the interior description
+#        Parameters
+#        ----------
+#        None
+#        Returns
+#        -------
+#        list
+#            List of loops formint the interior
+#        """
+#
+#        return super().interiors
+#
+#    @exterior.setter
+#    def exterior(self, exterior):
+#        """Cannot set the interior raise exception
+#        Parameters
+#        ----------
+#        exterior : list
+#            List of xy coordinate forming a loop
+#        Returns
+#        -------
+#        Exception
+#        """
+#
+#        raise GeoSimException("Cannot update the exterior coordinates of a polygon")
+#
+#    @interiors.setter
+#    def interiors(self, interiors):
+#        """Cannot set the exterior raise exception
+#        Parameters
+#        ----------
+#        interiors : list
+#            List of interiors forming loops
+#        Returns
+#        -------
+#        Exception
+#        """
+#
+#        raise GeoSimException("Cannot update the interior coordinates of a polygon")
 
 
 class GenUtil:
@@ -1118,7 +1117,7 @@ class ChordalAxis(object):
             branch = Branch(current_junction, adjacent_junction)
             last_triangle = branch.triangle_in_branch[-1]  # Extract the last triangle of the branch
 
-            # If the last triangle in a branch is junctin and within a certain tolerance it's a candidate for X Junction
+            # If the last triangle in a branch is junction and within a certain tolerance it's a candidate for X Junction
             if last_triangle.type in (ChordalAxis.JUNCTION, ChordalAxis.JUNCTION_T) and \
                     branch.length < min(current_junction.width, last_triangle.width) * ChordalAxis.JUNCTION_X_LENGTH:
                 # Merge the triangle in the branch to form only one polygon

@@ -39,7 +39,7 @@ def build_and_launch(title, qgs_geoms, diameter_tol, del_pol=False, del_hole=Fal
         qgs_feature.setGeometry(qgs_geom)
         qgs_features.append(qgs_feature)
 
-    rb_results = ReduceBend.reduce(qgs_features, diameter_tol, 100, feedback, del_pol, del_hole, True)
+    rb_results = ReduceBend.reduce(qgs_features, diameter_tol, feedback, del_pol, del_hole, True)
     log = feedback.textLog()
     print (log)
     qgs_features_out = rb_results.qgs_features_out
@@ -115,6 +115,17 @@ class Test(unittest.TestCase):
         self.assertTrue (True, title)
 
     """
+    def test_case000_3(self):
+        title = "Test 00: Empty file"
+
+
+        qgs_feature_out = build_and_launch(title, [], 5, True, True)
+        out_qgs_geom0 = create_polygon([(0, 10), (10, 10), (10, 0), (0, 0), (0, 10)], [])
+        if len(qgs_feature_out) == 0:
+            val0 = True
+        else:
+            val0 = False
+        self.assertTrue(val0, title)
 
     def test_case000_2(self):
         title = "Test 00: Polygon with start/end point colinear"
@@ -135,7 +146,7 @@ class Test(unittest.TestCase):
     def test_case000(self):
         title = "Test 00: Square polygon with one bend"
         qgs_geom0 = create_polygon([(0,10), (5,9), (10,10), (10,0), (0,0), (0,10)], [])
-        qgs_feature_out = build_and_launch(title,[qgs_geom0], 3000)
+        qgs_feature_out = build_and_launch(title,[qgs_geom0], 30)
         out_qgs_geom0 = create_polygon([(10,0), (0,0), (0,10), (10,10), (10,0)], [])
         val0 = out_qgs_geom0.equals(qgs_feature_out[0])
         self.assertTrue (val0, title)
@@ -181,7 +192,7 @@ class Test(unittest.TestCase):
         qgs_geom1 = create_line([(0, 0), (100, 0)])
         qgs_geom2 = create_line([(0, 0), (0, 100)])
         qgs_geom3 = create_line([(0, 0), (100, 100)])
-        qgs_feature_out = build_and_launch(title,[qgs_geom0, qgs_geom1, qgs_geom2, qgs_geom3], 3)
+        qgs_feature_out = build_and_launch(title,[qgs_geom0, qgs_geom1, qgs_geom2, qgs_geom3], 30)
         val0 = qgs_geom0.equals(qgs_feature_out[0])
         val1 = qgs_geom1.equals(qgs_feature_out[1])
         val2 = qgs_geom2.equals(qgs_feature_out[2])
@@ -214,7 +225,7 @@ class Test(unittest.TestCase):
         qgs_feature_out = build_and_launch(title, [qgs_geom0], 3)
         out_qgs_geom0 = create_line([(10, 10), (10,20), (10,10)])
         val0 = out_qgs_geom0.equals(qgs_feature_out[0])
-        self.assertTrue (val0, title)
+        self.assertTrue(val0, title)
 
     def test_case01_3(self):
         title = "Test 01_3: Line with segment parrallel to itself"

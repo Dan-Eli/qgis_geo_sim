@@ -2,14 +2,17 @@
 #  - put comment in the code
 #  - verify if progrssive erosion bring a plus (min_pass)
 #  - Add some comprehension list instead of for loop
-#  - edit line with a smooth line instead of a straight line
+#  - edit line with a smooth line instead of a straight line (new parameter)
+#  - edit when create an acute angle could mesaure the average angle and use it at a floor (new parameter)
 #  - in the bend flagging process prioritize the bend that goes outside the polygon first (for polygon)
 #  - put some code to correct J-Bend
+#  - Do not delete the line segment in the spatial index as it is very expensive mark them as delete (feature id -1)
+#  - Put __slotss in RbFeature
 
 from abc import ABC, abstractmethod
 import sys, math
-from qgis.core import QgsFeature, QgsPoint, QgsPointXY, QgsLineString, QgsPolygon, QgsWkbTypes, QgsSpatialIndex, \
-    QgsGeometry, QgsGeometryUtils, QgsRectangle, QgsProcessingException
+from qgis.core import QgsFeature, QgsLineString, QgsPolygon, QgsWkbTypes, QgsSpatialIndex, \
+    QgsGeometry, QgsGeometryUtils, QgsRectangle, QgsProcessingException, QgsMultiLineString
 
 # Define global constant
 ANTI_CLOCK_WISE = -1
@@ -17,10 +20,22 @@ CLOCK_WISE = 0
 
 
 class RbFeature(ABC):
-    _id_counter = 0
+    """Contain one QgsFeature
+
+    Abstract class specialized into scpecific geometries
+    """
+
+    _id_counter = 0  # Counter of feature
 
     @staticmethod
     def is_point(feature_type):
+        """Static method which determine if a QgsFeature is any kind of Point.
+
+        :param int feature_type: Feature type to validate.
+        :return: True if a point False otherwise
+        :rtype: bool
+        """
+
         if feature_type in [QgsWkbTypes.Point, QgsWkbTypes.Point25D, QgsWkbTypes.PointM, QgsWkbTypes.PointZ,
                             QgsWkbTypes.PointZM]:
             val = True
@@ -31,18 +46,13 @@ class RbFeature(ABC):
 
     @staticmethod
     def is_line_string(feature_type):
-        """Routine to test if the feature type is a line string
+        """Static method which determine if a QgsFeature is any kind of LineString.
 
-        Parameters
-        ----------
-        feature_type : int
-            Feature type to test
-
-        Returns
-        -------
-        Boolean
-            True: it's a line string; False: Otherwise
+        :param int feature_type: Feature type to validate.
+        :return: True if a LineString False otherwise
+        :rtype: bool
         """
+
         if feature_type in [QgsWkbTypes.LineString, QgsWkbTypes.LineString25D, QgsWkbTypes.LineStringZ,
                             QgsWkbTypes.LineStringM, QgsWkbTypes.LineStringZM]:
             val = True
@@ -53,6 +63,12 @@ class RbFeature(ABC):
 
     @staticmethod
     def is_polygon(feature_type):
+        """Static method which determine if a QgsFeature is any kind of Polygon.
+
+        :param int feature_type: Feature type to validate.
+        :return: True if a Polygon False otherwise
+        :rtype: bool
+        """
         if feature_type in [QgsWkbTypes.Polygon, QgsWkbTypes.Polygon25D, QgsWkbTypes.PolygonZ, QgsWkbTypes.PolygonM,
                             QgsWkbTypes.PolygonZM]:
             val = True
@@ -62,40 +78,73 @@ class RbFeature(ABC):
         return val
 
     def __init__(self, qgs_feature):
+        """Constructor of the RbFeature class.
+
+        :param QgsFeature feature_type: QgsFeature to process.
+        :return: None
+        :rtype: None
+        """
+
         self.qgs_feature = qgs_feature
         self.id = RbFeature._id_counter
         RbFeature._id_counter += 1
         abs_geom = qgs_feature.geometry().constGet()
         self.qgs_geom = QgsGeometry(abs_geom.clone())
-        self.qgs_feature.clearGeometry()
+        self.qgs_feature.clearGeometry()  # Empty the geometry.  Geometry to be recreated at the end
 
     @abstractmethod
     def get_rb_geom(self):
+        """Define an abstract method.
+
+        """
+
         pass
 
     @abstractmethod
     def get_qgs_feature(self):
+        """Define an abstract method.
+         """
+
         pass
 
 
 class RbPolygon(RbFeature):
 
     def __init__(self, qgs_feature):
+        """Constructor that breaks the Polygon into a list of closed LineString (RbGeom).
+
+        :param QgsFeature feature_type: QgsFeature polygon to process.
+        :return: None
+        :rtype: None
+        """
+
         super().__init__(qgs_feature)
-
         if self.qgs_geom.wkbType() != QgsWkbTypes.Polygon:
-            # Transform geometry to Polygon
-            self.qgs_geom = self.qgs_geom.coerceToType(QgsWkbTypes.Polygon)
-
+            self.qgs_geom = self.qgs_geom.coerceToType(QgsWkbTypes.Polygon)  # Force geometry to be a QgsPolygon
         # Transform geometry into a list a LineString first ring being outer ring
         self.qgs_geom = self.qgs_geom.coerceToType(QgsWkbTypes.LineString)
+        # Breaks the rings into a list of closed RbGeom (LineString). The first one being the outer ring
         self.rb_geom = [RbGeom(qgs_geom, QgsWkbTypes.Polygon) for qgs_geom in self.qgs_geom]
         self.qgs_geom = None
 
     def get_rb_geom(self):
+        """Return the RbGeom.
+
+        :param None.
+        :return: The RbGeom of the instance
+        :rtype: List of RbGeom
+        """
+
         return self.rb_geom
 
     def get_qgs_feature(self):
+        """Reconstruct the original QgsFeature with the new geometry.
+
+        :param None.
+        :return: The new Qgsfeature
+        :rtype: QgsFeature
+        """
+
         qgs_pol = QgsPolygon()
         qgs_pol.setExteriorRing(self.rb_geom[0].qgs_geom.constGet().clone())
         for rb_geom in self.rb_geom[1:]:
@@ -106,99 +155,243 @@ class RbPolygon(RbFeature):
 
 
 class RbLineString(RbFeature):
+    """Class managing a RbLineString.
+    """
 
     def __init__(self, qgs_feature):
+        """Constructor that breaks the LineString into a list of LineString (RbGeom).
+
+        :param QgsFeature feature_type: QgsFeature LineString to process.
+        :return: None
+        :rtype: None
+        """
         super().__init__(qgs_feature)
-
         if self.qgs_geom.wkbType() != QgsWkbTypes.LineString:
-            # Transform geometry to Point
-            self.qgs_geom = self.qgs_geom.coerceToType(QgsWkbTypes.LineString)
-
+            self.qgs_geom = self.qgs_geom.coerceToType(QgsWkbTypes.LineString)  # Force geometry to a QgsPoint
         self.rb_geom = [RbGeom(self.qgs_geom, QgsWkbTypes.LineString)]
         self.qgs_geom = None
 
     def get_rb_geom(self):
+        """Return the RbGeom.
+
+        :param None.
+        :return: The RbGeom of the instance
+        :rtype: List of RbGeom
+        """
+
         return self.rb_geom
 
     def get_qgs_feature(self):
+        """Reconstruct the original QgsFeature with the new geometry.
+
+        :param None
+        :return: The new Qgsfeature
+        :rtype: QgsFeature
+        """
+
         qgs_geom = QgsGeometry(self.rb_geom[0].qgs_geom.constGet().clone())
         self.qgs_feature.setGeometry(qgs_geom)
         return self.qgs_feature
 
 
 class RbPoint(RbFeature):
+    """Class managin a RbPoint
+    """
 
     def __init__(self, qgs_feature):
+        """Constructor that breaks the Point into a list of Point (RbGeom).
+
+        :param QgsFeature feature_type: QgsFeature Point to process.
+        :return: None
+        :rtype: None
+        """
+
         super().__init__(qgs_feature)
-
         if self.qgs_geom.wkbType() != QgsWkbTypes.Point:
-            # Transform geometry to QgsPoint
-            self.qgs_geom = self.qgs_geom.coerceToType(QgsWkbTypes.Point)
-
+            self.qgs_geom = self.qgs_geom.coerceToType(QgsWkbTypes.Point)  # Force geometry to QgsPoint
         self.rb_geom = [RbGeom(self.qgs_geom, QgsWkbTypes.Point)]
         self.rb_geom[0].is_simplest = True  # A point cannot be reduced
         self.qgs_geom = None
 
     def get_rb_geom(self):
+        """Return the RbGeom.
+
+        :param None.
+        :return: The RbGeom of the instance.
+        :rtype: List of RbGeom.
+        """
+
         return self.rb_geom
 
     def get_qgs_feature(self):
+        """Reconstruct the original QgsFeature with the original geometry.
+
+        A Point cannot be reduced but is needed for the spatial constraints
+
+        :param None
+        :return: The new Qgsfeature
+        :rtype: QgsFeature
+        """
+
         qgs_geom = QgsGeometry(self.rb_geom[0].qgs_geom.constGet().clone())
         self.qgs_feature.setGeometry(qgs_geom)
         return self.qgs_feature
 
 
-class GeomLineSegment:
+class RbCollection(object):
+    """Class used for managing the feature spatially.
 
-    def __init__(self):
+    QgsSpatialIndex class is used to store and retreive the features.
+    """
 
-        self._dict_index = {}  # Dictionary of spatial index for line segment per
-        self._id = 0
+    __slots__ = ('_spatial_index', '_dict_qgs_rb_geom', '_dict_qgs_segment', 'rb_results', '_id_qgs_segment')
 
-    def _get_next_id(self):
+    def __init__(self, rb_results):
+        """Constructor that initialize the RbCollection.
 
-        self._id += 1
+        :param RbResults rb_results: Object containing the results and statistics of the execution
+        :return: None
+        :rtype: None
+        """
 
-        return self._id
-
-    def add_geom(self, rb_geom):
-
-        if rb_geom.qgs_geom.wkbType() == QgsWkbTypes.LineString:
-            spatial_index = QgsSpatialIndex(flags=QgsSpatialIndex.FlagStoreFeatureGeometries)
-            qgs_points = rb_geom.qgs_geom.constGet().points()
-            num_points = len(qgs_points)
-            qgs_features = []
-#            if rb_geom.is_closed:
-#                nbr_segment = num_points  # Take into account that the start/end point (circular array)
-#            else:
-            nbr_segment = num_points-1
-            for i in range(nbr_segment):
-                qgs_feature= QgsFeature(id=self._get_next_id())
-                qgs_feature.setGeometry(QgsLineString(qgs_points[i], qgs_points[(i+1)%num_points]))
-                qgs_features.append(qgs_feature)
-
-            # Add the line segment in the spatial index
-            spatial_index.addFeatures(qgs_features)
-            self._dict_index[rb_geom.id] = spatial_index
+        self._spatial_index = QgsSpatialIndex(flags=QgsSpatialIndex.FlagStoreFeatureGeometries)
+        self._dict_qgs_segment = {}  # Contains a reference to the original geometry
+        self._id_qgs_segment = 0
+        self.rb_results = rb_results
 
         return
 
-    def delete_line_segment(self, qgs_geom_id, qgs_pnt0, qgs_pnt1):
+    def _get_next_id_segment(self):
+        """Increment the id of the segment.
 
-        spatial_index = self._dict_index[qgs_geom_id]
+        :param None.
+        :return: Value of the next ID
+        :rtype: Nint
+        """
+
+        self._id_qgs_segment += 1
+
+        return self._id_qgs_segment
+
+    def _create_feature_segment(self, origin_id, qgs_geom):
+        """Creates a new QgsFeature to load in the QgsSpatialIndex.
+
+        :param int origin_id: ID of the source feature (for reference purpose)
+        :return: The feature created
+        :rtype: Qgsfeature
+        """
+
+        id_segment = self._get_next_id_segment()
+        self._dict_qgs_segment[id_segment] = origin_id  #  Creates a reference for to the original RbGeom
+        qgs_feature = QgsFeature(id=id_segment)
+        qgs_feature.setGeometry(qgs_geom)
+
+        return qgs_feature
+
+    def add_features(self, rb_geoms):
+        """Add a RbGeom object in the spatial index.
+
+        For the LineString geometries. The geometry is broken into each line segment that are individually
+        loaded in the QgsSpatialIndex.  This strategy takes longer to load than if the feature was loaded as a whole
+        but is better for much of the cases.
+
+        :param [RbGeom] rb_geoms: List of RbGeom to load
+        :return: None
+        :rtype: None
+        """
+
+        for rb_geom in rb_geoms:
+            qgs_features = []
+            if rb_geom.qgs_geom.wkbType() == QgsWkbTypes.Point:
+                qgs_features.append(self._create_feature_segment(rb_geom.id, rb_geom.qgs_geom))
+            else:
+                qgs_points = rb_geom.qgs_geom.constGet().points()
+                for i in range(0,(len(qgs_points)-1)):
+                    qgs_geom = QgsGeometry(QgsLineString(qgs_points[i], qgs_points[i+1]))
+                    qgs_feature = self._create_feature_segment(rb_geom.id, qgs_geom)
+                    qgs_features.append(qgs_feature)
+
+            self._spatial_index.addFeatures(qgs_features)  #  Load all the segment of one RbGeom at the same time
+
+        return
+
+    def _merge_lines(self, qgs_multi_line_string):
+        """Merge the line segment to form a continous line.
+
+        In some cases, we can end up with multiple merged line
+
+        :param QgsMultiLineString qgs_multi_line_string: Multi line string to merge together
+        :return: The merged line string
+        :rtype: List of QgsLineString
+        """
+
+        qgs_geom_tmp = QgsGeometry(qgs_multi_line_string.clone())
+        if qgs_geom_tmp.isEmpty():
+            qgs_geoms_ls = []
+        else:
+            qgs_geom_merged = qgs_geom_tmp.mergeLines()
+            qgs_geoms_ls = qgs_geom_merged.coerceToType(QgsWkbTypes.LineString)  # Creates the list of QgsLineString
+
+        return qgs_geoms_ls
+
+    def get_segment_intersect(self, qgs_geom_id, qgs_rectangle ):
+        """Find the feature that intersects the bounding box.
+
+        Once the line string intersecting the bounding box are found are found. They are separated into 2 lists.
+        The first one being the line string with the same id (same line) the second one all the others
+
+        :param qgs_geom_id int: ID of the line string that is being simplified
+        :return: Two lists  of line string segment. First: Line string with same id; Second all the others
+        :rtype: tuple of 2 lists
+        """
+
+        qgs_multi_ls_with_itself = QgsMultiLineString()
+        qgs_multi_ls_with_others = QgsMultiLineString()
+        qgs_points = []
+        qgs_rectangle.grow(ReduceBend.ZERO_RELATIVE*100)  # Always increase the b_box to avoid degenerated b_box
+        qgs_segment_ids = self._spatial_index.intersects(qgs_rectangle)
+        for qgs_segment_id in qgs_segment_ids:
+            qgs_geom = self._spatial_index.geometry(qgs_segment_id)
+            if qgs_geom.wkbType() == QgsWkbTypes.Point:
+                qgs_points.append(qgs_geom)
+            else:
+                qgs_line_string = qgs_geom.constGet().clone()
+                if self._dict_qgs_segment[qgs_segment_id] == qgs_geom_id:
+                    qgs_multi_ls_with_itself.addGeometry(qgs_line_string)
+                else:
+                    qgs_multi_ls_with_others.addGeometry(qgs_line_string)
+
+        # Merge the line_segment
+        qgs_geoms_with_itself = self._merge_lines(qgs_multi_ls_with_itself)
+        qgs_geoms_with_others = self._merge_lines(qgs_multi_ls_with_others) + qgs_points
+
+        return qgs_geoms_with_itself, qgs_geoms_with_others
+
+    def _delete_segment(self, qgs_pnt0, qgs_pnt1):
+        """Delete a line segment in the spatial index based on start/end points.
+
+        To minimise the number of feature returned we search for a very small bounding box located in the middle
+        of the line segment.  Usually only one line segment is returned.
+
+        :param qgs_pnt0 QgsPoint: start point of the line segment.
+        :param qgs_pnt1 QgsPoint: end point of the line segment.
+        :return: None
+        """
+
         qgs_mid_point = QgsGeometryUtils.midpoint(qgs_pnt0, qgs_pnt1)
         qgs_rectangle = qgs_mid_point.boundingBox()
         qgs_rectangle.grow(ReduceBend.ZERO_RELATIVE*100)
-        ids = spatial_index.intersects(qgs_rectangle)
+        ids = self._spatial_index.intersects(qgs_rectangle)
         for id in ids:
-            qgs_geom_line = spatial_index.geometry(id)  # Extract geometry from index
+            qgs_geom_line = self._spatial_index.geometry(id)  # Extract geometry
             qgs_pnt_start = qgs_geom_line.vertexAt(0)
             qgs_pnt_end = qgs_geom_line.vertexAt(1)
+            #  Check if it's the right geometry
             if qgs_pnt_start.distance(qgs_pnt0) <= ReduceBend.ZERO_RELATIVE and \
                qgs_pnt_end.distance(qgs_pnt1) <= ReduceBend.ZERO_RELATIVE:
                 feature = QgsFeature(id=id)
                 feature.setGeometry(QgsLineString([qgs_pnt_start, qgs_pnt_end]))
-                if (spatial_index.deleteFeature(feature)):
+                if (self._spatial_index.deleteFeature(feature)):  # Delete the line segment
                     deleted = True
                     break
                 else:
@@ -211,192 +404,57 @@ class GeomLineSegment:
 
         return
 
-    def add_line_segment(self, rb_geom_id, qgs_pnt0, qgs_pnt1):
+    def delete_vertex(self, rb_geom, v_id_start, v_id_end):
+        """Delete a vertex in the line and update the spatial index.
 
-        feature = QgsFeature(id=self._get_next_id())
-        feature.setGeometry(QgsLineString(qgs_pnt0, qgs_pnt1))
-        self._dict_index[rb_geom_id].addFeature(feature)
+        When a vertex in a line string is deleted.  Two line segments are deleted and one line segment is
+        created in the spatial index.  cannot delete the first/last vertex of a line string
 
-        return
+        :param rb_geom RbGeom: LineString object to update.
+        :param v_id_start int: start of the vertex to delete.
+        :param v_id_end int: end of the vertex to delete.
+        :return: None
+        """
 
-    def get_line_segments(self, geom_id, qgs_rectangle):
+        v_ids_to_del = list(range(v_id_start, v_id_end+1))
+        v_ids_to_del.insert(0, v_ids_to_del[0]-1)
+        v_ids_to_del.append(v_ids_to_del[-1]+1)
 
-        spatial_index = self._dict_index[geom_id]  # Extract the appropriate spatial index
-        ids = spatial_index.intersects(qgs_rectangle)
-        # Transform the keys into rb_features
-        qgs_geom_line_segments = [spatial_index.geometry(id) for id in ids]
+        # Delete the line segment in the spatial index
+        for i in range(len(v_ids_to_del)-1):
+            qgs_pnt0 = rb_geom.qgs_geom.vertexAt(v_ids_to_del[i])
+            qgs_pnt1 = rb_geom.qgs_geom.vertexAt(v_ids_to_del[i+1])
+            self._delete_segment(qgs_pnt0, qgs_pnt1)
 
-        return qgs_geom_line_segments
+        # Add the new line segment in the spatial index
+        qgs_pnt0 = rb_geom.qgs_geom.vertexAt(v_ids_to_del[0])
+        qgs_pnt1 = rb_geom.qgs_geom.vertexAt(v_ids_to_del[-1])
+        qgs_geom_segment = QgsGeometry(QgsLineString(qgs_pnt0, qgs_pnt1))
+        qgs_feature = self._create_feature_segment(rb_geom.id, qgs_geom_segment)
+        self._spatial_index.addFeature(qgs_feature)
 
-
-class RbCollection(object):
-
-    __slots__ = ('_spatial_index', 'space_size', '_dict_qgs_geom', '_dict_geom_b_boxes', '_id_b_box',
-                 '_geom_line_segment', 'rb_results')
-
-    def __init__(self, rb_results, nbr_sub_space):
-        self._spatial_index = QgsSpatialIndex(flags=QgsSpatialIndex.FlagStoreFeatureGeometries)
-        self.space_size = ReduceBend.MAP_RANGE / nbr_sub_space
-        self._dict_qgs_geom = {}
-        self._dict_geom_b_boxes = {}
-        self._id_b_box = 0
-        self._geom_line_segment = GeomLineSegment()
-        self.rb_results = rb_results
-
-        return
-
-    def _get_id_b_box(self):
-
-        self._id_b_box += 1
-
-        return self._id_b_box
-
-    def _get_b_box_xy(self, qgs_b_box):
-
-        x_min = qgs_b_box.xMinimum()
-        y_min = qgs_b_box.yMinimum()
-        x_max = qgs_b_box.xMaximum()
-        y_max = qgs_b_box.yMaximum()
-
-        return x_min, y_min, x_max, y_max
-
-    def _polygon_from_rectangle(self, qgs_b_box):
-
-        x_min, y_min, x_max, y_max = self._get_b_box_xy(qgs_b_box)
-        qgs_pol = QgsPolygon(QgsLineString((QgsPoint(x_min, y_min), QgsPoint(x_max, y_min),
-                                            QgsPoint(x_max, y_max), QgsPoint(x_min, y_max))))
-
-        return qgs_pol
-
-    def _subdivide_b_box(self, qgs_geom, qgs_b_box, lst_b_box):
-
-        if max(qgs_b_box.width(),qgs_b_box.height()) <= self.space_size:
-            # No bounding box should be 0 or near 0 in width or in height
-            # Also avoid some side effects when bends are parallel to the boundind box
-            qgs_b_box.grow(ReduceBend.ZERO_RELATIVE*100)
-            if qgs_geom.intersects(qgs_b_box):
-#                x_min, y_min, x_max, y_max = self._get_b_box_xy(qgs_b_box)
-                qgs_feature_b_box = QgsFeature(id=self._get_id_b_box())
-                qgs_geom_b_box = self._polygon_from_rectangle(qgs_b_box)
-                qgs_feature_b_box.setGeometry(qgs_geom_b_box)
-                lst_b_box += [qgs_feature_b_box]  # Keep that bounding box
-        else:
-            # Sub divide this bounding box
-            x_min, y_min, x_max, y_max = self._get_b_box_xy(qgs_b_box)
-            x_mid = (x_min + x_max) / 2.
-            y_mid = (y_min + y_max) / 2.
-            if x_max-x_min < self.space_size:
-                # Only create north-south quadrant
-                qgs_rect_s = QgsRectangle(x_min, y_min, x_max, y_mid)
-                qgs_rect_n = QgsRectangle(x_min, y_mid, x_max, y_max)
-                qgs_rectangles = [qgs_rect_s, qgs_rect_n]
-            elif y_max-y_min < self.space_size:
-                # Only create east-west quadrant
-                qgs_rect_w = QgsRectangle(x_min, y_min, x_mid, y_max)
-                qgs_rect_e = QgsRectangle(x_mid, y_min, x_max, y_max)
-                qgs_rectangles = [qgs_rect_w, qgs_rect_e]
-            else:
-                # Split the current bounding box into four smaller quadrant (bounding boxes)
-                qgs_rect_sw = QgsRectangle(x_min, y_min, x_mid, y_mid)
-                qgs_rect_se = QgsRectangle(x_mid, y_min, x_max, y_mid)
-                qgs_rect_nw = QgsRectangle(x_min, y_mid, x_mid, y_max)
-                qgs_rect_ne = QgsRectangle(x_mid, y_mid, x_max, y_max)
-                qgs_rectangles = [qgs_rect_sw, qgs_rect_se, qgs_rect_nw, qgs_rect_ne]
-            # Loop over each quadrant
-            for qgs_rect in qgs_rectangles:
-                lst_b_box = self._subdivide_b_box(qgs_geom, qgs_rect, lst_b_box)
-
-        return lst_b_box
-
-
-    def create_index_b_boxes(self, rb_geom_id, qgs_geom):
-
-        qgs_features_b_box = self._subdivide_b_box(qgs_geom, qgs_geom.boundingBox(), [])
-        b_box_ids = [qgs_feature_b_box.id() for qgs_feature_b_box in qgs_features_b_box]
-        for b_box_id in b_box_ids:
-            self._dict_geom_b_boxes[b_box_id] = rb_geom_id  # Keep link between b_box id and the rb_geom id
-
-        self._spatial_index.addFeatures(qgs_features_b_box)  # Add the bounding boxes into the index
-
-        return len(b_box_ids)
-
-
-    def add_features(self, rb_geoms):
-
-        b_boxes = 0
-        for rb_geom in rb_geoms:
-            b_boxes += self.create_index_b_boxes(rb_geom.id, rb_geom.qgs_geom)
-            self._dict_qgs_geom[rb_geom.id] = rb_geom.qgs_geom  # Keep a reference to the qgs_geom
-            self._geom_line_segment.add_geom(rb_geom)  #  Create the line segment index for the geometry
-
-        self.rb_results.lines_log_info.append("Number of bounding box created: {}".format(b_boxes))
+        # Delete the vertex in the line string geometry
+        for v_id_to_del in reversed(range(v_id_start, v_id_end+1)):
+            rb_geom.qgs_geom.deleteVertex(v_id_to_del)
 
         return
-
-
-    def get_features(self, qgs_rectangle, drop_ids=[]):
-
-        b_box_ids = self._spatial_index.intersects(qgs_rectangle)
-        # From the b_box_ids get the qgs_geom ids
-        geom_ids = [self._dict_geom_b_boxes[b_box_id] for b_box_id in b_box_ids]
-        geom_ids = list(set(geom_ids))  # Remove duplicate geom_ids in the list
-        # From the id extract the qgs_geom
-        qgs_geom = [self._dict_qgs_geom[geom_id] for geom_id in geom_ids if geom_id not in drop_ids]
-
-        return qgs_geom
-
-
-    def delete_vertex(self, rb_geom, v_ids_to_del):
-
-        qgs_geom = rb_geom.qgs_geom
-        v_ids_to_process = [v_ids_to_del[0]-1] + v_ids_to_del + [v_ids_to_del[-1]+1]
-        for i in range(len(v_ids_to_process)-1):
-            qgs_pnt_first = qgs_geom.vertexAt(v_ids_to_process[i])
-            qgs_pnt_last = qgs_geom.vertexAt(v_ids_to_process[i+1])
-            self._geom_line_segment.delete_line_segment(rb_geom.id, qgs_pnt_first, qgs_pnt_last)
-
-        # Add the new segment line
-        qgs_pnt_0 = qgs_geom.vertexAt(v_ids_to_process[0])
-        qgs_pnt_1 = qgs_geom.vertexAt(v_ids_to_process[-1])
-        self._geom_line_segment.add_line_segment(rb_geom.id, qgs_pnt_0, qgs_pnt_1)
-
-        # Check that the new line segment added is completely covered by the bounding boxes of the geometry
-        qgs_rectangle = QgsRectangle(QgsPointXY(qgs_pnt_0), QgsPointXY(qgs_pnt_1))
-        qgs_geom_line_string = QgsGeometry(QgsLineString(qgs_pnt_0, qgs_pnt_1))
-        b_box_ids = self._spatial_index.intersects(qgs_rectangle)
-        for b_box_id in b_box_ids:
-            if self._dict_geom_b_boxes[b_box_id] == rb_geom.id:
-                qgs_pol = self._spatial_index.geometry(id=b_box_id)
-                if qgs_geom_line_string.within(qgs_pol):
-                    line_segment_covered = True
-                    break
-                else:
-                    line_segment_covered = False
-        if (not line_segment_covered):
-            self.create_index_b_boxes(rb_geom.id, qgs_geom_line_string)
-
-        # Now that the line segment spatial structure is updated let's delete the vertex
-        for v_id_to_del in reversed(v_ids_to_del):
-            qgs_geom.deleteVertex(v_id_to_del)
-
-        return
-
-
-    def get_line_segments(self, geom_id, qgs_rectangle):
-
-        qgs_geom_line_segments = self._geom_line_segment.get_line_segments(geom_id, qgs_rectangle)
-
-        return qgs_geom_line_segments
 
 
 class RbGeom:
+    """Class defining the line used for the bend reduction"""
 
     __slots__ = ('id', 'original_geom_type', 'is_simplest', 'qgs_geom', 'qgs_rectangle', 'bends', 'nbr_bend_reduced',
                  'is_closed', 'need_pivot')
 
-    _id_counter = 0
+    _id_counter = 0  # Unique ID counter
 
     def __init__(self, qgs_abs_geom, original_geom_type):
+        """Constructor that initialize a RbGeom object.
+
+        :param RbResults rb_results: Object containing the results and statistics of the execution
+        :return: None
+        :rtype: None
+        """
 
         self.id = self.next_id()
         self.original_geom_type = original_geom_type
@@ -405,19 +463,21 @@ class RbGeom:
         self.is_simplest = False
         self.is_closed = False
         self.need_pivot = False
+        self.bends = []
+        self.nbr_bend_reduced = 0
+        # Set some variable depending on the attribute of the feature
         if self.original_geom_type == QgsWkbTypes.Point:
             self.is_simplest = True  # A point cannot be simplified
         elif self.original_geom_type == QgsWkbTypes.LineString:
-            if qgs_geometry.length() <= ReduceBend.ZERO_RELATIVE:
-                self.is_simplest = True  # Zero length line. Do not try to simplify
-            else:
-                if qgs_geometry.isClosed():
+            if qgs_geometry.length() >= ReduceBend.ZERO_RELATIVE:
+                if qgs_geometry.isClosed():  # Closed LineString
                     if abs(qgs_geometry.sumUpArea()) > ReduceBend.ZERO_RELATIVE:
                         self.is_closed = True
                         self.need_pivot = True
-#                        self.orientation = qgs_geometry.orientation()
                     else:
-                        self.is_simplest = True # Zero area polygon,  Do not try to simplify
+                        self.is_simplest = True # Zero area polygon (degenerated).  Do not try to simplify
+            else:
+                self.is_simplest = True  # Zero length line (degenerated). Do not try to simplify
         else:
             # It's a polygon
             if abs(qgs_geometry.sumUpArea()) > ReduceBend.ZERO_RELATIVE:
@@ -426,17 +486,28 @@ class RbGeom:
             else:
                 self.is_simplest = True  # Zero area polygon. Do not simplify the closed line
 
-        self.qgs_rectangle = self.qgs_geom.boundingBox()
-        self.bends = []
-        self.nbr_bend_reduced = 0
-
     def next_id(self):
+        """Get the next counterID.
+
+        :param: QgsMultiLineString qgs_multi_line_string: Multi line string to merge togethernONE
+        :return: ID of the RbGeom object
+        :rtype: int
+        """
 
         RbGeom._id_counter += 1
 
-        return (RbGeom._id_counter)
+        return RbGeom._id_counter
 
     def get_angles(self):
+        """Extract the list of angles of the LineString
+
+        The angle od a vertice is the angle formed by the preceding, the current and the next vertice.
+        For an open LineString the start/end vertice do not have angles
+
+        :param: None
+        :return: Angle of each vertice of the LineString
+        :rtype: [real]
+        """
 
         if self.original_geom_type != QgsWkbTypes.Point:
             qgs_line_string = self.qgs_geom.constGet()
@@ -446,19 +517,30 @@ class RbGeom:
                 # Add two vertice at the start/end for the circularity of a closed line
                 end_xy = xy[-2]  # Not that last because it's the same position as the first vertice
                 xy.insert(0, end_xy)
-            # Extract the angles at each vertice except start and end vertice
+
             angles = [QgsGeometryUtils.angleBetweenThreePoints(xy[i-1][0], xy[i-1][1], xy[i][0], xy[i][1],
                                                                xy[i+1][0], xy[i+1][1]) for i in range(1, len(xy)-1)]
+        else:
+            angles = []
 
         return angles
 
 
 class Bend:
+    """Define a Bend object which is the reduction goal of this algorithm"""
+
+    __slots__ = ('i', 'j', 'area', 'perimeter', 'adj_area', 'to_reduce', 'qgs_geom_new_subline',
+                 'qgs_geom_new_subline_trimmed', 'orientation', 'qgs_geom_bend', 'direction')
 
     def __init__(self, i, j, qgs_polygon):
+        """Constructor that initialize a Bend object.
 
-        __slots__ = ('i', 'j', 'area', 'perimeter', 'adj_area', 'to_reduce', 'qgs_geom_new_subline',
-                     'qgs_geom_new_subline_trimmed', 'orientation')
+        :param: int i: start osition of the vertice in the LineString to reduce
+        :param: int j: end position of the vertice in the LineString to reduce
+        :param: QgsPolygon qgs_polygon: Polygon formed by the bend to reduce
+        :return: None
+        :rtype: None
+        """
 
         self.i = i
         self.j = j
@@ -472,9 +554,14 @@ class Bend:
         self.qgs_geom_new_subline_trimmed = None
 
     def get_new_subline(self, rb_geom):
+        """Create the new line that will replace the bend.
+
+       :param: RbGeom rb_geom: Geometry containing the lien to reduce
+       :return: The new line to close the polygon
+       :rtype: QgsGeometry
+       """
 
         if self.qgs_geom_new_subline is None:
-            # First pass calculate the value
             qgs_pnt_i = rb_geom.qgs_geom.vertexAt(self.i)
             qgs_pnt_j = rb_geom.qgs_geom.vertexAt(self.j)
             qgs_ls_new_subline = QgsLineString([qgs_pnt_i, qgs_pnt_j])
@@ -483,6 +570,12 @@ class Bend:
         return self.qgs_geom_new_subline
 
     def get_new_subline_trimmed(self, rb_geom):
+        """Create the new line that will replace the bend but just a little bit shorter.
+
+       :param: RbGeom rb_geom: Geometry containing the lien to reduce
+       :return: The new line to close the polygon
+       :rtype: QgsGeometry
+       """
 
         if self.qgs_geom_new_subline_trimmed is None:
             qgs_ls_new_line = self.get_new_subline(rb_geom).constGet()
@@ -499,12 +592,20 @@ class Bend:
 
 
 class RbResults:
+    """Class defining the stats and result"""
 
     __slots__ = ('in_nbr_features', 'out_nbr_features', 'nbr_bend_reduced', 'nbr_bend_detected', \
                  'qgs_features_out', 'nbr_hole_del', 'nbr_pol_del', 'nbr_pass', 'is_structure_valid', \
                  'lines_log_info')
 
     def __init__(self):
+        """Constructor that initialize a RbResult object.
+
+        :param: None
+        :return: None
+        :rtype: None
+        """
+
         self.in_nbr_features = None
         self.out_nbr_features = None
         self.nbr_bend_reduced = 0
@@ -516,100 +617,92 @@ class RbResults:
         self.is_structure_valid = None
         self.lines_log_info = []
 
-    # def dummy():
-    """...
 
-     Parameters
-     ----------
-     aaa : str
-         blblbla
-
-     Returns
-     -------
-     list
-        blablabla
-     """
-
-class Epsilon():
+class Epsilon:
+    """Class defining the value of the"""
 
     __slots__ = '_zero_relative', '_zero_absolute', '_zero_angle', '_map_range'
 
     def __init__(self, features):
-        b_box = features[0].geometry().boundingBox()
+        """Constructor that initialize the Epsilon (near zero) object.
+
+        The dynamic (range) of the feature can vary a lot. We calculate the dynamic of the bounding box of all
+        the features and we use it to estimate an epsilon (zero).  when the range of the bounding box is very small
+        the epsilon can be very small and the opposite when the bigger the boundoing box is.
+
+        :param: [QgsFeatures] feaures: List of QgsFeature to process.
+        :return: None
+        :rtype: None
+        """
+
+        if len(features) >= 1:
+            b_box = features[0].geometry().boundingBox()  #  Initialize the bounding box
+        else:
+            b_box = QgsRectangle(0, 0, 1, 1)  # Manage empty list of feature
+
         for feature in features:
-            b_box.combineExtentWith(feature.geometry().boundingBox())
+            b_box.combineExtentWith(feature.geometry().boundingBox())  # Update the bbox
 
         delta_x = abs(b_box.xMinimum()) + abs(b_box.xMaximum())
         delta_y = abs(b_box.yMinimum()) + abs(b_box.yMaximum())
-        dynamic_xy = max(delta_x, delta_y)
+        dynamic_xy = max(delta_x, delta_y)  # Dynamic of the bounding box
         log_loss = int(math.log(dynamic_xy, 10)+1)
         max_digit = 15  # Number of significative digits for real number
-        security = 2
+        security = 2  # Keep 2 order of magnitude of security
         abs_digit = max_digit  - security
         rel_digit = max_digit - log_loss - security
         self._zero_relative = (1. / (10**(rel_digit)))
         self._zero_absolute = 1. / (10**(abs_digit))
-        self._zero_angle= math.radians(.0001)
-        self._map_range = max(b_box.width(), b_box.height())
+        self._zero_angle= math.radians(.0001)  # Angle used to decide a flat angle
 
-        return
 
     def set_class_variables(self):
+        """Set the different epsilon values.
+
+       :param: None
+       :return: None
+       :rtype: None
+       """
 
         ReduceBend.ZERO_RELATIVE =  self._zero_relative
         ReduceBend.ZERO_ABSOLUTE = self._zero_absolute
         ReduceBend.ZERO_ANGLE = self._zero_angle
-        ReduceBend.MAP_RANGE = self._map_range
 
         return
 
 
-
-
-#        bends_small = []
-#        bends_out = []
-#        bends_in = []
-#        bends_other = []
-#        bends = [(bend.area, i) for i, bend in enumerate(rb_geom.bends) if bend.area < min_adj_area]
-#        bends.sort(key=lambda item: item[0])
-#        for bend_area, i in bends:
-#            if rb_geom.bends[i].area <= min_adj_area * .15:
-#                bends_small.append((bend_area,i))
-#            elif rb_geom.bends[i].area <= min_adj_area:
-#                if rb_geom.bends[i].orientation == 'IN':
-#                    bends_in.append((bend_area,i))
-#                else:
-#                    bends_out.append((bend_area,i))
-#            else:
-#                bends_other.append((bend_area,i))
-#
-#        bends = bends_small + bends_out + bends_in + bends_other
-
-#    else:
-#
-#        bends = [(bend.adj_area, i) for i, bend in enumerate(rb_geom.bends) if bend.area < min_adj_area]
-#        bends.sort(key=lambda item: item[0])
-
-
 class ReduceBend():
-
-    ZERO_ABSOLUTE = None  # To be set later
-    ZERO_RELATIVE = None  # To be set later
-    ZERO_ANGLE = None     # To be set later
-    MAP_RANGE = None      # To be set later
+    """Main class for bend reduction"""
 
     @staticmethod
-    def reduce(qgs_in_features, diameter_tol, nbr_sub_space=1, feedback=None, flag_del_outer=False,
+    def reduce(qgs_in_features, diameter_tol, feedback=None, flag_del_outer=False,
                flag_del_inner=False, validate_structure=False):
+        """Main static method used to launch the bend reduction.
 
-        rb = ReduceBend(qgs_in_features, diameter_tol, nbr_sub_space, feedback, flag_del_outer, flag_del_inner,
-                        validate_structure)
+       :params: [QgsFeatures] qgs_features: List of geatures to process.
+       :params: real diameter_tol: Tolerance of the diameter of the bend to reduce.
+       :params: QgsFeedback feedback: Handle for interaction with QGIS.
+       :params: Bool flag_del_outer: Delete polygon if area below the diameter tolerance.
+       :params: Bool flag_del_inner: Delete polygon holes if area below the diameter tolerance.
+       :params: Bool validate_structure: Validate internal data structure after processing (for debugging)
+       :return: Statistics and result object.
+       :rtype: RbResult
+       """
+
+        rb = ReduceBend(qgs_in_features, diameter_tol, feedback, flag_del_outer, flag_del_inner, validate_structure)
         results = rb.reduce_bends()
 
         return results
 
     @staticmethod
     def extract_polygon_attributes(qgs_geom):
+        """Static method to calculate the area and perimeter of a LineString.
+
+       :params: QgsGeometry qgs_geom: Geometry to process.
+       :return: Area and perimeter of the geometry.
+       :rtype: Tuple
+       """
+
         qgs_line_string = qgs_geom.constGet()
         qgs_pol = QgsPolygon(qgs_line_string.clone())
         area = qgs_pol.area()
@@ -619,6 +712,16 @@ class ReduceBend():
 
     @staticmethod
     def calculate_adj_area(area, perimeter):
+        """Static method to calculate the adjusted area.
+
+        The adjusted area is used to determine if a bend must be reduce.
+
+       :params: real area: area of a polygon.
+       :params: real perimeter: perimeter of a polygon.
+       :return: Adjusted area of a polygon
+       :rtype: Real
+       """
+
         compactness_index = 4 * area * math.pi / perimeter ** 2
         adj_area = area * (.75 / compactness_index)
 
@@ -626,19 +729,35 @@ class ReduceBend():
 
     @staticmethod
     def calculate_min_adj_area(diameter_tol):
+        """Static method to calculate the adjusted area of the maximum diameter tolerance.
+
+       :params: real diameter: Diameter tolerance to used for bend reduction
+       :return: Minimum adjusted area of a polygon to reduce
+       :rtype: Real
+       """
+
         min_adj_area = .75 * math.pi * (diameter_tol / 2.) ** 2
 
         return min_adj_area
 
-    __slots__ = ('qgs_in_features', 'diameter_tol', 'nbr_sub_space', 'feedback', 'flag_del_outer', 'flag_del_inner',
+    __slots__ = ('qgs_in_features', 'diameter_tol', 'feedback', 'flag_del_outer', 'flag_del_inner',
                  'validate_structure', 'rb_collection', 'eps', 'rb_results', 'rb_features', 'rb_geoms')
 
-    def __init__(self, qgs_in_features, diameter_tol, nbr_sub_space, feedback, flag_del_outer, flag_del_inner,
-                 validate_structure):
+    def __init__(self, qgs_in_features, diameter_tol, feedback, flag_del_outer, flag_del_inner, validate_structure):
+        """Constructor for the bend reduction.
+
+       :params: [QgsFeatures] qgs_features: List of geatures to process.
+       :params: real diameter_tol: Tolerance of the diameter of the bend to reduce.
+       :params: QgsFeedback feedback: Handle for interaction with QGIS.
+       :params: Bool flag_del_outer: Delete polygon if area below the diameter tolerance.
+       :params: Bool flag_del_inner: Delete polygon holes if area below the diameter tolerance.
+       :params: Bool validate_structure: Validate internal data structure after processing (for debugging)
+       :return: None
+       :rtype: None
+       """
 
         self.qgs_in_features = qgs_in_features
         self.diameter_tol = diameter_tol
-        self.nbr_sub_space = nbr_sub_space
         self.feedback = feedback
         self.flag_del_outer = flag_del_outer
         self.flag_del_inner = flag_del_inner
@@ -646,36 +765,25 @@ class ReduceBend():
         self.rb_collection = None
 
     def reduce_bends(self):
-        """Main routine for bend reduction
+        """Main method to manage bend reduction.
 
-        Parameters
-        ----------
-        qgs_in_features : List of QgsFeatures
-             List of QgsFeatures to reduce
-        diameter_tol : Float
-             Tolerance used for reducing the bend. Equivalent to the diameter of a circle to remove
-        flag_del_outer : Boolean (default is False)
-             Flag indicating if we delete feature that have an exterior ring area below the tolerance
-        flag_del_inner : Boolean (default is False)
-             Flag indicating if we delete inner rings that have an area below the tolerance
+        :params: None
+        :return: Statistics and result object.
+        :rtype: RbResult
+        """
 
-         Returns
-         -------
-         list of QgsFeatures
-            List of reduces QgsFeatures
-         """
-
+        #  Code used for the profiler (uncomment if needed)
 #        import cProfile, pstats, io
 #        from pstats import SortKey
 #        pr = cProfile.Profile()
 #        pr.enable()
 
+        # Calculates the epsilon and initialize some stats and results value
         self.eps = Epsilon(self.qgs_in_features)
         self.eps.set_class_variables()
-
         self.rb_results = RbResults()
 
-        # Create the list of RbLineString and RbPoint to process
+        # Create the list of RbPolygon, RbLineString and RbPoint to process
         self.rb_features = self.create_rb_feature()
         self.rb_results.in_nbr_features = len(self.qgs_in_features)
 
@@ -683,16 +791,16 @@ class ReduceBend():
         self.rb_geoms = self.pre_reduction_process()
 
         # Create the RbCollection a spatial index to accelerate search
-        self.rb_collection = RbCollection(self.rb_results, self.nbr_sub_space)
+        self.rb_collection = RbCollection(self.rb_results)
         self.rb_collection.add_features(self.rb_geoms)
 
-        # Execute the bend reduction
+        # Execute the bend reduction for each LineString
         self._manage_reduce_bend()
 
         # Recreate the QgsFeature
         qgs_features_out = [rb_feature.get_qgs_feature() for rb_feature in self.rb_features]
 
-        # Calculate return values
+        # Set return values
         self.rb_results.out_nbr_features = len(qgs_features_out)
         self.rb_results.qgs_features_out = qgs_features_out
 
@@ -700,6 +808,7 @@ class ReduceBend():
         if self.validate_structure:
             self.rb_results.is_structure_valid = self.validate_integrity()
 
+        #  Code used for the profiler (uncomment if needed)
 #        pr.disable()
 #        s = io.StringIO()
 #        sortby = SortKey.CUMULATIVE
@@ -710,38 +819,40 @@ class ReduceBend():
         return self.rb_results
 
     def create_rb_feature(self):
-        """Break the QgsPolygon into RbLineString (inner and outer ring)
+        """Create the different RbFeatures from the QgsFeatures.
 
-        If the feature is a QgsFeature the feature is transformed into a RbLineString
-
-         Parameters
-         ----------
-         qgs_features : List of QgsFeatures
-             List of QgsFeature to simplify
-
-         Returns
-         -------
-         None
-         """
+        :params: None
+        :return: List of rb_features
+        :rtype: [RbFeatures]
+        """
 
         rb_features = []
 
         for qgs_feature in self.qgs_in_features:
             qgs_geom = qgs_feature.geometry()  # extract the Geometry
-            feature_type = qgs_geom.wkbType()
 
-            if RbFeature.is_polygon(feature_type):
+            if RbFeature.is_polygon(qgs_geom.wkbType()):
                 rb_features.append(RbPolygon(qgs_feature))
-            elif RbFeature.is_line_string(feature_type):
+            elif RbFeature.is_line_string(qgs_geom.wkbType()):
                 rb_features.append(RbLineString(qgs_feature))
-            elif RbFeature.is_point(feature_type):
+            elif RbFeature.is_point(qgs_geom.wkbType()):
                 rb_features.append(RbPoint(qgs_feature))
             else:
+                # Manage usupported geometry type
                 raise Exception("Unsupported GeometryType: {}".format(qgs_geom.wkbType()))
 
         return rb_features
 
     def pre_reduction_process(self):
+        """This method execute the pre reduction process
+
+        Pre reduction process includes remove small polygon or polygon hole simplify line when vertice
+        are really too close and transform the RbFeature into LineString
+
+        :params: None
+        :return: List of rb_geom
+        :rtype: [RbGeom]
+        """
 
         # Delete the outer or inner ring below the diameter tolerance
         if self.flag_del_outer or self.flag_del_inner:
@@ -764,15 +875,22 @@ class ReduceBend():
 
 
     def del_outer_inner_ring(self):
+        """This method deletes the polygons and polygon holes below the diameter tolerance
+
+        :params: None
+        :return: None
+        :rtype: None
+        """
+
         # Loop over each rb_features
-        for i in reversed(range(len(self.rb_features))):
+        for i in reversed(range(len(self.rb_features))):  # List visited in reverse order for easier deletion of entry
             if isinstance(self.rb_features[i], RbPolygon):  # Only process Polygon
                 min_adj_area = ReduceBend.calculate_min_adj_area(self.diameter_tol)
-                for j in reversed(range(len(self.rb_features[i].rb_geom))):
+                for j in reversed(range(len(self.rb_features[i].rb_geom))):  # List also visited in reverse order
                     area, perimeter = ReduceBend.extract_polygon_attributes(self.rb_features[i].rb_geom[j].qgs_geom)
                     adj_area = self.calculate_adj_area(area, perimeter)
                     if j == 0:
-                        # Process the exterior ring
+                        # Process the exterior ring (outer ring always at position 0)
                         if self.flag_del_outer:
                             if adj_area < min_adj_area:
                                 del self.rb_features[i]  # Delete the rb_feature
@@ -788,8 +906,18 @@ class ReduceBend():
         return
 
     def set_bend_direction(self, rb_geom):
+        """For closed LineString, this method set the direction of each bend.
+
+        For a closed LineString each bend is going either inside or outside.  Once a bend is determined to go
+        inside or outside all the other bend alternate from inside to outside or the opposite
+
+        :params: RbGeom rb_geom: Geometry to set bend direction
+        :return: None
+        :rtype: None
+        """
 
         if rb_geom.is_closed and len(rb_geom.bends) >= 1:
+            # Detemine if the first bend is going inside or outside the polygon
             first_bend = rb_geom.bends[0]
             qgs_geom_centroid = first_bend.qgs_geom_bend.centroid()
             qgs_geom_pol = QgsGeometry(QgsPolygon(rb_geom.qgs_geom.constGet().clone(), []))
@@ -798,6 +926,7 @@ class ReduceBend():
             else:
                 rb_geom.bends[0].direction = 'OUT'
 
+            #  All the other bend alternate [in, out, in, out] or [out, in, out, in...]
             for i in range(1, len(rb_geom.bends)):
                 if rb_geom.bends[i - 1].direction == 'IN':
                     rb_geom.bends[i].direction = 'OUT'
@@ -817,15 +946,16 @@ class ReduceBend():
                 if bend.j - bend.i >= 4:
                     if bend.area >= ReduceBend.calculate_min_adj_area(diameter_tol):
                         bend_location = bend
-                        break
+                        if bend.direction == 'OUT':
+                            rb_geom.need_pivot = False  # Optimal bend found
+                            break
+
             if bend_location is not None:
                 # There is bend candidate for a rotation
                 qgs_points = rb_geom.qgs_geom.constGet().points()
                 new_start_end = (bend_location.j + bend_location.i) // 2
                 new_qgs_points = qgs_points[new_start_end:] + qgs_points[1:new_start_end + 1]
                 rb_geom.qgs_geom = QgsGeometry(QgsLineString(new_qgs_points))
-                if bend.direction == 'OUT':
-                    rb_geom.need_pivot = False  # Priority for bend that are going outside
 
         return
 
@@ -854,8 +984,7 @@ class ReduceBend():
             str = "Iteration: {}; Bends detected: {}; Bend reduced: {}; Tolerance used: {}"\
                   .format(nbr_pass, nbr_bend_detected, nbr_bend_reduced, current_diameter_tol)
             self.rb_results.lines_log_info.append(str)
-            if nbr_pass == 0:
-                self.rb_results.nbr_bend_detected = nbr_bend_detected
+            if nbr_pass == 0: self.rb_results.nbr_bend_detected = nbr_bend_detected
 
             # While loop breaking condition
             if nbr_pass > min_pass and nbr_bend_reduced == 0:
@@ -917,7 +1046,7 @@ class ReduceBend():
             if self.rb_collection is None:
                 rb_geom.qgs_geom.deleteVertex(vertex_id_to_del)
             else:
-                self.rb_collection.delete_vertex(rb_geom, [vertex_id_to_del])
+                self.rb_collection.delete_vertex(rb_geom, vertex_id_to_del, vertex_id_to_del)
 
         if rb_geom.qgs_geom.length() <= ReduceBend.ZERO_RELATIVE:
             # Something wrong.  do not try to simplify the LineString
@@ -934,9 +1063,9 @@ class ReduceBend():
             del rb_geom.bends[0]  # Remove the first bend
             del rb_geom.bends[-1]  # Remove the last bend
 
-        if rb_geom.is_closed:
-            for bend in rb_geom.bends:
-                if bend.direction == "OUT": bend.area *= .66
+#        if rb_geom.is_closed:
+#            for bend in rb_geom.bends:
+#                if bend.direction == "OUT": bend.area *= .66
         lst_bends = [(bend.adj_area, i) for i, bend in enumerate(rb_geom.bends) if bend.area < min_adj_area]
         lst_bends.sort(key=lambda item: item[0])
 
@@ -977,14 +1106,17 @@ class ReduceBend():
         bend = rb_geom.bends[ind]
         qgs_geom_new_subline = bend.get_new_subline(rb_geom)
 
+        b_box = bend.qgs_geom_bend.boundingBox()
+        qgs_geoms_with_itself, qgs_geoms_with_others = self.rb_collection.get_segment_intersect(rb_geom.id, b_box)
+
         # First: check if the bend reduce line string is an OGC simple line
         # We test with a tiny smaller line to ease the testing and false positive error
         if check_constraints:
             if qgs_geom_new_subline.length() >= ReduceBend.ZERO_RELATIVE:
                 qgs_geom_new_subline_trimmed = bend.get_new_subline_trimmed(rb_geom)
-                qgs_geom_potentials = self.rb_collection.get_line_segments(rb_geom.id,
-                                                                      qgs_geom_new_subline_trimmed.boundingBox())
-                for qgs_geom_potential in qgs_geom_potentials:
+#                qgs_geom_potentials = self.rb_collection.get_line_segments(rb_geom.id,
+#                                                                      qgs_geom_new_subline_trimmed.boundingBox())
+                for qgs_geom_potential in qgs_geoms_with_itself:
                     if qgs_geom_new_subline_trimmed.disjoint(qgs_geom_potential):
                         #            if not qgs_geom_new_sub_trim_engine.disjoint(qgs_geom_potential.constGet()):
                         # Everything is OK
@@ -1005,8 +1137,8 @@ class ReduceBend():
         if check_constraints:
             qgs_rectangle = bend.qgs_geom_bend.boundingBox()
             #        qgs_geom_engine_new_subline = QgsGeometry.createGeometryEngine(qgs_geom_new_subline.constGet())
-            qgs_geom_potentials = self.rb_collection.get_features(qgs_rectangle, [rb_geom.id])
-            for qgs_geom_potential in qgs_geom_potentials:
+#            qgs_geom_potentials = self.rb_collection.get_features(qgs_rectangle, [rb_geom.id])
+            for qgs_geom_potential in qgs_geoms_with_others:
                 if not qgs_geom_potential.disjoint(qgs_geom_new_subline):
                     #            if not qgs_geom_new_subline.disjoint(qgs_geom_potential):
                     #            if not qgs_geom_engine_new_subline.disjoint(qgs_geom_potential.constGet()):
@@ -1019,7 +1151,7 @@ class ReduceBend():
         if check_constraints:
             #        qgs_geom_engine_bend_area = QgsGeometry.createGeometryEngine(bend.qgs_geom_bend)
             #        qgs_geom_bend = QgsGeometry(bend.qgs_geom_bend.clone())
-            for qgs_geom_potential in qgs_geom_potentials:
+            for qgs_geom_potential in qgs_geoms_with_others:
                 #            if qgs_geom_bend_area.contains(qgs_geom_potential.constGet()):
                 if bend.qgs_geom_bend.contains(qgs_geom_potential):
                     # A feature is totally located inside
@@ -1037,8 +1169,8 @@ class ReduceBend():
                 # Check spatial constraints
                 spatial_constraints = self.validate_spatial_constraints(ind, rb_geom)
                 if spatial_constraints:
-                    v_ids_to_del = list(range(bend.i + 1, bend.j))  # List of the vertex id to delete
-                    self.rb_collection.delete_vertex(rb_geom, v_ids_to_del)
+#                    v_ids_to_del = list(range(bend.i + 1, bend.j))  # List of the vertex id to delete
+                    self.rb_collection.delete_vertex(rb_geom, bend.i+1, bend.j-1)
                     #                bend.reduce(rb_geom)
                     self.rb_results.nbr_bend_reduced += 1  # Global counter of bend reduced
                     nbr_bend_reduced += 1  # Local counter of bend reduced
@@ -1168,30 +1300,27 @@ class ReduceBend():
 #                                                sys.float_info.max, sys.float_info.max)
 #                    spatial_index = self.rb_collection._geom_line_segment._dict_index[5]
 #                    b_boxes = spatial_index.intersects(qgs_rectangle)
-                    self.rb_collection._geom_line_segment.delete_line_segment(rb_geom.id, qgs_points[i], qgs_points[i+1])
+                    self.rb_collection._delete_segment(qgs_points[i], qgs_points[i+1])
 
         if is_structure_valid:
-            for spatial_index in self.rb_collection._geom_line_segment._dict_index.values():
-                qgs_rectangle = QgsRectangle(-sys.float_info.max, -sys.float_info.max,
-                                             sys.float_info.max,sys.float_info.max)
-                b_boxes = spatial_index.intersects(qgs_rectangle)
-#                qgs_pol = spatial_index.geometry(id=b_boxes[0])
-                if len(b_boxes) != 0:
-                    is_structure_valid = False
-                    print ("error: 1")
-                    break
+            qgs_rectangle = QgsRectangle(-sys.float_info.max, -sys.float_info.max,
+                                         sys.float_info.max,sys.float_info.max)
+            b_boxes = self.rb_collection._spatial_index.intersects(qgs_rectangle)
+            if len(b_boxes) != 0:
+                is_structure_valid = False
+                print ("error: 1")
 
-        if is_structure_valid:
-            for rb_geom in self.rb_geoms:
-                qgs_line_string = rb_geom.qgs_geom.constGet()
-                qgs_geom = QgsGeometry(qgs_line_string.clone())
-                id_b_boxes = self.rb_collection._spatial_index.intersects(qgs_line_string.boundingBox())
-                for id_b_box in id_b_boxes:
-                    if self.rb_collection._dict_geom_b_boxes [id_b_box] == rb_geom.id:
-                        qgs_pol = self.rb_collection._spatial_index.geometry(id_b_box)
-                        qgs_geom = qgs_geom.difference(qgs_pol)
-                if not qgs_geom.isEmpty():
-                    is_structure_valid = False
-                    print("error: 2")
+#        if is_structure_valid:
+#            for rb_geom in self.rb_geoms:
+#                qgs_line_string = rb_geom.qgs_geom.constGet()
+#                qgs_geom = QgsGeometry(qgs_line_string.clone())
+#                id_b_boxes = self.rb_collection._spatial_index.intersects(qgs_line_string.boundingBox())
+#                for id_b_box in id_b_boxes:
+#                    if self.rb_collection._dict_geom_b_boxes [id_b_box] == rb_geom.id:
+#                        qgs_pol = self.rb_collection._spatial_index.geometry(id_b_box)
+#                        qgs_geom = qgs_geom.difference(qgs_pol)
+#                if not qgs_geom.isEmpty():
+#                    is_structure_valid = False
+#                    print("error: 2")
 
         return is_structure_valid

@@ -4,189 +4,10 @@ General classes and utilities needed for GeoSim.
 
 import sys
 from math import atan, degrees, sqrt, acos, pi
-###from shapely.geometry import Point, LineString, Polygon
-#from shapely.ops import linemerge
-#from shapely.ops import unary_union
-from collections.abc import Iterable
-#from collections import OrderedDict
-#from shapely.strtree import STRtree
+#from collections.abc import Iterable
 
 from qgis.core import QgsGeometry, QgsPoint, QgsLineString, QgsWkbTypes, QgsProcessingException, QgsSpatialIndex,\
                       QgsPolygon, QgsRectangle, QgsMultiLineString
-
-
-#class LineStringSc(LineString):
-#    """LineString specialization that allow LincestringSc to be included  in the SpatialContainer"""
-#
-#    def __init__(self, coords):
-#        """ Constructor for the LineStringSc
-#            Parameters
-#            ----------
-#            coords : tuple
-#                Tuple of x,y coordinate
-#            Returns
-#            -------
-#            None
-#        """
-#        super().__init__(coords)
-#        self._sc_id = None
-#        self._sc_scontainer = None
-
-#    @property
-#    def coords(self):
-#        """ Return the coordinate of the line
-#        Parameters
-#        ----------
-#        None
-#        Returns
-#        -------
-#        Tuple
-#            List of x,y coordinate
-#        """
-#        return super().coords
-
-#    @coords.setter
-#    def coords(self, coords):
-#        """Update the coordinate value anf the spatial container if there is a spatial container
-#        Parameters
-#        ----------
-#        Coords : tuple
-#            List of x,y coordinates
-#        Returns
-#        -------
-#        None
-#        """
-#        LineString.coords.__set__(self, coords)
-#
-#        if self._sc_scontainer != None:  # Is the feature is a spatial container
-#            # The coordinate has changed so update the bounding box in the spatial container
-#            self._sc_scontainer.update_spatial_index(self)
-
-
-#class PointSc(Point):
-#    """Point specialization that allow PointSc features to be included  in the SpatialContainer"""
-#
-#    def __init__(self, coords):
-#        """ Constructor of the PointSc class
-#        Parameters
-#        ----------
-#        coords : tuple
-#            x,y coordinates of the point
-#        Returns
-#        -------
-#        None
-#        """
-#
-#        super().__init__(coords)
-#        self._sc_id = None
-#        self._sc_scontainer = None
-#
-#    @property
-#    def coords(self):
-#        """ Return the coordinate of a line
-#        Parameters
-#        ----------
-#        None
-#        Returns
-#        -------
-#        Tuple
-#            x,y coordinate of the point
-#        """
-#
-#        return super().coords
-#
-#    @coords.setter
-#    def coords (self, coords):
-#        """Update the coordinate of the LineString and update the spatial container if the spatial container exists
-#        Parameters
-#        ----------
-#        coords : tuple
-#            x,y coordinates of the point
-#        Returns
-#        -------
-#        None
-#        """
-#
-#        Point.coords.__set__(self, coords)
-#
-#        if self._sc_scontainer is not None:  # Is the feature is a spatial container
-#            # The coordinate has changed so update the bounding box in the spatial container
-#            self._sc_container.update_bbox(self)
-#
-#
-#class PolygonSc(Polygon):
-#    """Polygon specialization to be included in the SpatialContainer"""
-#
-#    def __init__(self, exterior, interiors=None):
-#        """Constructor of the PolygoncSc
-#        Parameters
-#        ----------
-#        exterior : list
-#            List of x,y coordinate forming a loop
-#        interiors : list
-#            List of loops
-#        Returns
-#        -------
-#        None
-#        """
-#        super().__init__(exterior, interiors)
-#        self._sc_id = None
-#        self._sc_scontainer = None
-#
-#    @property
-#    def exterior(self):
-#        """Return the exterior description
-#        Parameters
-#        ----------
-#        None
-#        Returns
-#        -------
-#        list
-#            List of x,y coordinate forming a loop
-#        """
-#        return super().exterior
-#
-#    @property
-#    def interiors(self):
-#        """Return the interior description
-#        Parameters
-#        ----------
-#        None
-#        Returns
-#        -------
-#        list
-#            List of loops formint the interior
-#        """
-#
-#        return super().interiors
-#
-#    @exterior.setter
-#    def exterior(self, exterior):
-#        """Cannot set the interior raise exception
-#        Parameters
-#        ----------
-#        exterior : list
-#            List of xy coordinate forming a loop
-#        Returns
-#        -------
-#        Exception
-#        """
-#
-#        raise GeoSimException("Cannot update the exterior coordinates of a polygon")
-#
-#    @interiors.setter
-#    def interiors(self, interiors):
-#        """Cannot set the exterior raise exception
-#        Parameters
-#        ----------
-#        interiors : list
-#            List of interiors forming loops
-#        Returns
-#        -------
-#        Exception
-#        """
-#
-#        raise GeoSimException("Cannot update the interior coordinates of a polygon")
 
 
 class GenUtil:
@@ -241,22 +62,22 @@ class GenUtil:
         return out_line_string
 
 
-    @staticmethod
-    def make_iterable(iter_feature):
-        """Test if the parameter is iterable; if not make it iterable by creating a tuple of one element
-        Parameters
-        ----------
-        iter_feature: Object
-            Object to test for iterability
-        Returns
-        -------
-        Iterable object
-        """
-
-        if not isinstance(iter_feature, Iterable):
-            iter_feature = (iter_feature,)
-
-        return iter_feature
+#    @staticmethod
+#    def make_iterable(iter_feature):
+#        """Test if the parameter is iterable; if not make it iterable by creating a tuple of one element
+#        Parameters
+#       ----------
+#       iter_feature: Object
+#           Object to test for iterability
+#       Returns
+#        -------
+#        Iterable object
+#        """
+#
+#        if not isinstance(iter_feature, Iterable):
+#            iter_feature = (iter_feature,)
+#
+#        return iter_feature
 
     @staticmethod
     def difference_angle_vector(p0, p1, zero_tolerance):
@@ -302,199 +123,199 @@ class GenUtil:
         return angle
 
 
-    @staticmethod
-    def distance(p1, p2):
-        """Calculate the euclidean distance between 2 points
-        Parameters
-        ----------
-        p0 : tuple
-            x,y coordinate of the first vector (center to 0,0)
-        p1 : tuple
-            x,y coordinate of the second vector (center to 0,0)
-        Returns
-        -------
-        float
-            Distance between the 2 points (real)
-        """
+#    @staticmethod
+#    def distance(p1, p2):
+#        """Calculate the euclidean distance between 2 points
+#        Parameters
+#        ----------
+#        p0 : tuple
+#            x,y coordinate of the first vector (center to 0,0)
+#        p1 : tuple
+#            x,y coordinate of the second vector (center to 0,0)
+#        Returns
+#        -------
+#        float
+#            Distance between the 2 points (real)
+#        """
+#
+#        return sqrt((p2[0] - p1[0]) ** 2.0 + (p2[1] - p1[1]) ** 2.0)
 
-        return sqrt((p2[0] - p1[0]) ** 2.0 + (p2[1] - p1[1]) ** 2.0)
+#    @staticmethod
+#    def angle_vector(p1, p2, p3, type=DEGREE):
+#        """Calculate the angle formed by the vector p1-p2 and p2-p3
+#        Parameters
+#        ----------
+#        p1 : tuple
+#            x,y coordinate of the first coordinate
+#        p2 : tuple
+#            x,y coordinate of the second coordinate
+#        p3 : tuple
+#            x,y coordinate of the third coordinate
+#        Returns
+#        -------
+#        float
+#            Angle between the vector p1-p2 and p2-p3 [0..180]
+#        """
+#
+#        a = (p2[0] - p1[0], p2[1] - p1[1])
+#        b = (p2[0] - p3[0], p2[1] - p3[1])
+#        len_a = (a[0] ** 2. + a[1] ** 2.) ** .5
+#        len_b = (b[0] ** 2. + b[1] ** 2.) ** .5
+#
+#        dot_p = a[0] * b[0] + a[1] * b[1]
+#
+#        # If P1 == P2 or P2 == P3 ===> angle is 180.
+#        if len_a * len_b != 0.0:
+#            value = dot_p / (len_a * len_b)
+#            if value >= 1.0:
+#                value = 1.0
+#            if value <= -1.0:
+#                value = -1.0
+#        else:
+#            value = -1.0
 
-    @staticmethod
-    def angle_vector(p1, p2, p3, type=DEGREE):
-        """Calculate the angle formed by the vector p1-p2 and p2-p3
-        Parameters
-        ----------
-        p1 : tuple
-            x,y coordinate of the first coordinate
-        p2 : tuple
-            x,y coordinate of the second coordinate
-        p3 : tuple
-            x,y coordinate of the third coordinate
-        Returns
-        -------
-        float
-            Angle between the vector p1-p2 and p2-p3 [0..180]
-        """
+#        theta = acos(value)
 
-        a = (p2[0] - p1[0], p2[1] - p1[1])
-        b = (p2[0] - p3[0], p2[1] - p3[1])
-        len_a = (a[0] ** 2. + a[1] ** 2.) ** .5
-        len_b = (b[0] ** 2. + b[1] ** 2.) ** .5
+ #       if type == GenUtil.DEGREE:
+ #           theta = degrees(theta)
 
-        dot_p = a[0] * b[0] + a[1] * b[1]
+ #       return theta
 
-        # If P1 == P2 or P2 == P3 ===> angle is 180.
-        if len_a * len_b != 0.0:
-            value = dot_p / (len_a * len_b)
-            if value >= 1.0:
-                value = 1.0
-            if value <= -1.0:
-                value = -1.0
-        else:
-            value = -1.0
+#    @staticmethod
+#    def orientation(p0, p1, p2):
+#        """ Calculate the orientation (clockwise or anticlockwise) of a line formed by 3 vertices using the dot product
+#        Parameters
+#        ----------
+#        p1 : tuple
+#            x,y coordinate of the first coordinate
+#        p2 : tuple
+#            x,y coordinate of the second coordinate
+#        p3 : tuple
+#            x,y coordinate of the third coordinate
+#        Returns
+#        -------
+#        int
+#            The direction of the line:
+#                0 : Straight line
+#                1: Counter clockwise angle
+#                -1 : Clockwise angle
+#        """
+#
+#        orient = ((p0[0] - p1[0]) * (p2[1] - p1[1])) - ((p2[0] - p1[0]) * (p0[1] - p1[1]))
+#
+#        if orient > 0.:
+#            orient = 1
+#        elif orient < 0.:
+#            orient = -1
+#        else:
+#            orient = 0
+#
+#        return orient
 
-        theta = acos(value)
+#    @staticmethod
+#    def rescale_vector(p1, p2, scale_factor):
+#        """Rescale the vector defined by the points P1 and P2 by a factor
+#        Parameters
+#        ----------
+#        p1 : tuple
+#            x,y coordinate of the first coordinate
+#        p2 : tuple
+#            x,y coordinate of the second coordinate
+#        scale_factor : real
+#            Factor to scale the vector
+#        Returns
+#        -------
+#        tuple
+#            x,y coordinate of the rescale vector
+#        """
+#
+#        x1 = p1[0]
+#        y1 = p1[1]
+#        x2 = p2[0]
+#        y2 = p2[1]
+#
+#        vec_x = x2 - x1
+#        vec_y = y2 - y1
+#
+#        vec_x = vec_x * scale_factor
+#        vec_y = vec_y * scale_factor
+#
+#        x_out = vec_x + x1
+#        y_out = vec_y + y1
+#
+#        return (x_out, y_out)
 
-        if type == GenUtil.DEGREE:
-            theta = degrees(theta)
+#    @staticmethod
+#    def mid_point(p1, p2):
+#        """Return a point in the middle of the 2 points
+#        Parameters
+#        ----------
+#        p1 : tuple
+#            x,y coordinate of the first coordinate
+#        p2 : tuple
+#            x,y coordinate of the second coordinate
+#        Returns
+#        -------
+#        tuple
+#            x,y coordinate of the milddle point
+#        """
+#
+#        x = (p1[0] + p2[0]) / 2.
+#        y = (p1[1] + p2[1]) / 2.
+#
+#        return (x, y)
 
-        return theta
+#    @staticmethod
+#    def calculate_compactness_index(area, perimeter):
+#        """Calculate the compactness index based of the perimeter and area
+#        Parameters
+#        area : float
+#            Area of the polygon
+#        perimeter : float
+#            Perimeter of the area
+#        Return:
+#        float
+#            Compactness index
+#        """
+#
+#        return 4 * area * pi / (perimeter ** 2.0)
 
-    @staticmethod
-    def orientation(p0, p1, p2):
-        """ Calculate the orientation (clockwise or anticlockwise) of a line formed by 3 vertices using the dot product
-        Parameters
-        ----------
-        p1 : tuple
-            x,y coordinate of the first coordinate
-        p2 : tuple
-            x,y coordinate of the second coordinate
-        p3 : tuple
-            x,y coordinate of the third coordinate
-        Returns
-        -------
-        int
-            The direction of the line:
-                0 : Straight line
-                1: Counter clockwise angle
-                -1 : Clockwise angle
-        """
+#    @staticmethod
+#    def build_bounding_box(tolerance, coord):
+#        """Create and adjust a bounding box (xmin, ymin, xmax, ymax) with a small tolerance
+#        Parameters
+#        ----------
+#        tolerance : float
+#            Delta value to add to the bounding box
+#        coord : tuple
+#            Two x,y coordinate defining the bounding box
+#        Returns
+#        -------
+#        tuple
+#            Two x,y coordinate defining the bounding box
+#        """
+#
+#        xmin = coord[0] - tolerance
+#        ymin = coord[1] - tolerance
+#        xmax = coord[0] + tolerance
+#        ymax = coord[1] + tolerance
+#
+#        return (xmin, ymin, xmax, ymax)
 
-        orient = ((p0[0] - p1[0]) * (p2[1] - p1[1])) - ((p2[0] - p1[0]) * (p0[1] - p1[1]))
-
-        if orient > 0.:
-            orient = 1
-        elif orient < 0.:
-            orient = -1
-        else:
-            orient = 0
-
-        return orient
-
-    @staticmethod
-    def rescale_vector(p1, p2, scale_factor):
-        """Rescale the vector defined by the points P1 and P2 by a factor
-        Parameters
-        ----------
-        p1 : tuple
-            x,y coordinate of the first coordinate
-        p2 : tuple
-            x,y coordinate of the second coordinate
-        scale_factor : real
-            Factor to scale the vector
-        Returns
-        -------
-        tuple
-            x,y coordinate of the rescale vector
-        """
-
-        x1 = p1[0]
-        y1 = p1[1]
-        x2 = p2[0]
-        y2 = p2[1]
-
-        vec_x = x2 - x1
-        vec_y = y2 - y1
-
-        vec_x = vec_x * scale_factor
-        vec_y = vec_y * scale_factor
-
-        x_out = vec_x + x1
-        y_out = vec_y + y1
-
-        return (x_out, y_out)
-
-    @staticmethod
-    def mid_point(p1, p2):
-        """Return a point in the middle of the 2 points
-        Parameters
-        ----------
-        p1 : tuple
-            x,y coordinate of the first coordinate
-        p2 : tuple
-            x,y coordinate of the second coordinate
-        Returns
-        -------
-        tuple
-            x,y coordinate of the milddle point
-        """
-
-        x = (p1[0] + p2[0]) / 2.
-        y = (p1[1] + p2[1]) / 2.
-
-        return (x, y)
-
-    @staticmethod
-    def calculate_compactness_index(area, perimeter):
-        """Calculate the compactness index based of the perimeter and area
-        Parameters
-        area : float
-            Area of the polygon
-        perimeter : float
-            Perimeter of the area
-        Return:
-        float
-            Compactness index
-        """
-
-        return 4 * area * pi / (perimeter ** 2.0)
-
-    @staticmethod
-    def build_bounding_box(tolerance, coord):
-        """Create and adjust a bounding box (xmin, ymin, xmax, ymax) with a small tolerance
-        Parameters
-        ----------
-        tolerance : float
-            Delta value to add to the bounding box
-        coord : tuple
-            Two x,y coordinate defining the bounding box
-        Returns
-        -------
-        tuple
-            Two x,y coordinate defining the bounding box
-        """
-
-        xmin = coord[0] - tolerance
-        ymin = coord[1] - tolerance
-        xmax = coord[0] + tolerance
-        ymax = coord[1] + tolerance
-
-        return (xmin, ymin, xmax, ymax)
-
-    @staticmethod
-    def calculate_adjusted_area(area, cmp_index):
-        """Calculate the adjusted area from the area and compactness index
-        Parameters
-        ----------
-        area : float
-            Area of the polygon
-        cmp_index : float
-            Compactness index of the areea
-        Return:
-        float
-            Adjusted area of the polygon
-            """
-        return area * (0.75 / cmp_index)
+#    @staticmethod
+#    def calculate_adjusted_area(area, cmp_index):
+#        """Calculate the adjusted area from the area and compactness index
+#        Parameters
+#        ----------
+#        area : float
+#            Area of the polygon
+#        cmp_index : float
+#            Compactness index of the areea
+#        Return:
+#        float
+#            Adjusted area of the polygon
+#            """
+#        return area * (0.75 / cmp_index)
 
 class SpatialContainer(object):
     """This class manages the spatial features and a spatial index using the QgsSpatialIndex.
@@ -516,22 +337,6 @@ class SpatialContainer(object):
 
         self._index = QgsSpatialIndex()
 
-#    def adjust_bbox(self, bounds, delta=GenUtil.ZERO):
-#        """Adjust the bounding box by increasing by a very small delta
-#        Parameters:
-#            bounds: Tuple forming the bounding box (xmin, ymin, wmax, ymax)
-#        return value:
-#            altered bounding box (xmin, ymin, wmax, ymax)"""
-#
-#        xmin, ymin, xmax, ymax = bounds
-#
-#        xmin -= delta
-#        ymin -= delta
-#        xmax += delta
-#        ymax += delta
-#
-#        return (xmin, ymin, xmax, ymax)
-
     def add_features(self, features):
         """Adds all the features in the container and update the spatial index with the feature's bound
         *Parameters*:
@@ -548,10 +353,6 @@ class SpatialContainer(object):
 
             qgs_rect = QgsRectangle(feature.rectangle)
             qgs_rect.grow(GenUtil.ZERO)
-
-
-#            # Adjust the bounding box
-#            qgs_rect = self.adjust_bbox(qgs_rect)
 
             # Container unique internal counter
             SpatialContainer._sc_id += 1
@@ -607,8 +408,7 @@ class SpatialContainer(object):
         *Parameters*:
             - features: list of features to delete
         *Returns*:
-            Exception
-        Exception InternalError: If the key is not in one of the structure
+            None
         """
 
         for feature in features:
@@ -693,12 +493,6 @@ class ChordalAxis(object):
     JUNCTION_X_FIRST = 6  # First (primary) X Junction triangle
     JUNCTION_X_LAST = 7  # Last (secondary) X Junction triangle
     JUNCTION_X_LENGTH = .2  #  Distance between two X junction
-
-    # Define the type of action(type_action) for creating the centre line
-    #   NONE = 0  # No special action is needed when creating the center line
-    #   T_EDIT_CENTRE_LINE = 1  # A correction is needed for a T Junction (only used when correcting the centre line)
-    #   X_EDIT_CENTRE_LINE = 2  # A correction is needed for a X Junction (only used when correcting the centre line)
-    #   NO_CENTRE_LINE = 3  # No centre line is needed for this triangle (only used when correcting the centre line)
 
     ANGLE_JUNCTION_T = 45.  # Delta used to test if 2 branches or contiguous
     SEARCH_TOLERANCE = None
@@ -1434,8 +1228,6 @@ class _TriangleSc():
                 potential_triangles = _TriangleSc.s_container.get_features(qgs_rectangle=mid_pnt_side.boundingBox(), remove_features=[self])
 
                 # Find the closest triangle
-####                for triangle in potential_triangles:
-####                    a = mid_pnt_side.distance(triangle.geom_line_string)
                 triangles = [(triangle, mid_pnt_side.distance(triangle.geom_line_string)) for triangle in potential_triangles]
                 sorted(triangles, key=lambda triangle: triangle[1])  # Sort by distance
                 triangles = [triangle for (triangle, distance) in triangles if distance < ChordalAxis.SEARCH_TOLERANCE]
@@ -1469,7 +1261,6 @@ class _TriangleSc():
         except AttributeError:
 
             self._centre_line = []
-####            coords = list(self.coords)
 
             # Process each case depending on the number of internal side of the triangle
             if self.type == ChordalAxis.ISOLATED:
@@ -1685,10 +1476,10 @@ class GeoSimException(Exception):
         Exception.__init__(self, *arguments, **keywords)
 
 
-class InternalError(GeoSimException):
-    """InternalError exception"""
-
-    def __init__(self, *param_names):
-        """Constructor"""
-
-        GeoSimException.__init__(self, *param_names)
+#class InternalError(GeoSimException):
+#    """InternalError exception"""
+#
+#    def __init__(self, *param_names):
+#        """Constructor"""
+#
+#        GeoSimException.__init__(self, *param_names)

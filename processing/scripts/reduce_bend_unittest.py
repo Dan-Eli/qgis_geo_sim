@@ -4,7 +4,7 @@ Unit test for reduce_bend algorithm
 
 import unittest
 from qgis.core import QgsApplication
-from algo_reduce_bend import ReduceBend
+from redbend import ReduceBend
 from qgis.core import QgsPoint, QgsLineString, QgsPolygon, QgsFeature, QgsGeometry, QgsProcessingFeedback
 
 def qgs_line_string_to_xy(qgs_line_string):

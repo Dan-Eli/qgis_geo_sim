@@ -109,7 +109,7 @@ def topological_simplifier(instance, parameters, context, feedback, inputs):
     feedback.pushInfo("Number of holes deleted: {0}".format(nbr_hole_del))
     feedback.pushInfo("Number of features left invalid: {0}".format(nbr_feat_inv_uncorrect))
 
-    return {"OUTPUT": dest_id, "NBR_FEATURE": nbr_feature}
+    return {"OUTPUT": dest_id}
 
 def polygon_area(pol):
     return pol.area()

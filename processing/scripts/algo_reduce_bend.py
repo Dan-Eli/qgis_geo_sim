@@ -1296,10 +1296,6 @@ class ReduceBend():
             if qgs_line_string.wkbType() == QgsWkbTypes.LineString:
                 qgs_points = qgs_line_string.points()
                 for i in range(len(qgs_points)-1):
-#                    qgs_rectangle = QgsRectangle(-sys.float_info.max, -sys.float_info.max,
-#                                                sys.float_info.max, sys.float_info.max)
-#                    spatial_index = self.rb_collection._geom_line_segment._dict_index[5]
-#                    b_boxes = spatial_index.intersects(qgs_rectangle)
                     self.rb_collection._delete_segment(qgs_points[i], qgs_points[i+1])
 
         if is_structure_valid:
@@ -1309,18 +1305,5 @@ class ReduceBend():
             if len(b_boxes) != 0:
                 is_structure_valid = False
                 print ("error: 1")
-
-#        if is_structure_valid:
-#            for rb_geom in self.rb_geoms:
-#                qgs_line_string = rb_geom.qgs_geom.constGet()
-#                qgs_geom = QgsGeometry(qgs_line_string.clone())
-#                id_b_boxes = self.rb_collection._spatial_index.intersects(qgs_line_string.boundingBox())
-#                for id_b_box in id_b_boxes:
-#                    if self.rb_collection._dict_geom_b_boxes [id_b_box] == rb_geom.id:
-#                        qgs_pol = self.rb_collection._spatial_index.geometry(id_b_box)
-#                        qgs_geom = qgs_geom.difference(qgs_pol)
-#                if not qgs_geom.isEmpty():
-#                    is_structure_valid = False
-#                    print("error: 2")
 
         return is_structure_valid
